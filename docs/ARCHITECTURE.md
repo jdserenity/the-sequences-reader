@@ -17,6 +17,8 @@ Personal offline reader for [The Sequences](https://www.readthesequences.com/). 
 - Store essays as static assets in-repo (Markdown or HTML) produced by the scraper.
 - Preserve original essay URLs as metadata.
 - TOC structure (books → chapters → essays) matches the source site.
+- Scraper downloads each essay from PmWiki `?action=markdown` and writes the response **verbatim** (no scrape-time transform).
+- readthesequences.com is a PmWiki site. Its markdown export encodes footnotes as reference links (`#footnoteN`, `#citationN`, `↩`) that can be out of document order and occasionally pair the wrong block text with a number; verified on live export (e.g. *Biases: An Introduction*, footnote 14). The reader normalizes footnotes for display (anchors, numeric sort, collapsible section, in-panel scroll) but cannot fix missing or mismatched pairings already present in the export.
 
 ## Progress model
 

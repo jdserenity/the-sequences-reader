@@ -24,6 +24,14 @@ def scrape_corpus(out_dir: Path, *, delay_s: float = DEFAULT_DELAY_S) -> dict:
     toc_html = fetch_text(client, absolute(CONTENTS_PATH))
     toc = parse_contents_html(toc_html)
     manifest = build_manifest(toc, scraped_at=scraped_at)
+    preface_body = fetch_text(client, markdown_url('/'))
+    (out_dir / 'essays' / 'preface.md').write_text(preface_body, encoding='utf-8')
+    manifest['standalone'].insert(0, {'id': 'preface', 'title': 'Preface', 'slug': 'Preface', 'path': f'{BASE}/'})
+    for entry in manifest['essays']: entry['order'] += 1
+    manifest['essays'].insert(0, {
+      'id': 'preface', 'title': 'Preface', 'slug': 'Preface',
+      'source_url': f'{BASE}/', 'content_path': 'essays/preface.md', 'order': 0,
+    })
     for entry in manifest['essays']:
       slug = entry['slug']
       md_url = markdown_url(f'/{slug}')
