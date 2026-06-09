@@ -9,7 +9,8 @@ Personal offline reader for [The Sequences](https://www.readthesequences.com/). 
 - Progress syncs across devices (last-write-wins).
 - Single-route SPA at `/`: reader and table of contents are two panels on one page; horizontal slide between them (swipe left/right or bottom nav icons). TOC is tiled: intro essay and bibliography/glossary are direct links; only books open oval “pebble” detail tiles beside the TOC. Solo TOC is full-height without vignette; with two or more pebbles, tiles are shorter and radially masked. Desktop: up to three detail pebbles (four tiles total); opening a fourth is blocked until one closes; the pebble group stays horizontally centered. Hidden scrollbars; fade/slide-in for new tiles. Mobile stacks pebbles vertically (one detail at a time).
 - Opens last-read essay at saved scroll position (local-first; first visit starts at corpus order).
-- UX details (theme, animations, typography) decided during build.
+- Startup splash: fullscreen ink-in-water canvas animation (~2.6s, no text); plays on first visit and hard refresh only (`localStorage` + `navigation.type === 'reload'`).
+- UX details (theme, animations, typography) otherwise decided during build.
 
 ## Content
 
