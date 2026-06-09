@@ -32,9 +32,7 @@
         <ReaderPanel essayId={app.essayId} />
       </section>
       <section class="app-panel" aria-hidden={app.panel !== 'toc'}>
-        <div class="panel-scroll">
-          <TocPanel />
-        </div>
+        <TocPanel />
       </section>
     </div>
   </div>
