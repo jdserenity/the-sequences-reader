@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getLastEssayId, getResumePath, getScroll, saveScroll } from './progress';
+import { countableEssayCount } from './corpus';
+import {
+  DEMO_READ_ESSAY_IDS,
+  getLastEssayId,
+  getReadStats,
+  getResumePath,
+  getScroll,
+  isEssayRead,
+  markEssayRead,
+  saveScroll,
+  seedDemoReadsIfEmpty,
+} from './progress';
 
 function mockLocalStorage(): void {
   const store = new Map<string, string>();
@@ -45,5 +56,53 @@ describe('progress', () => {
     expect(getResumePath('first')).toBe('/read/first');
     saveScroll('essay-2', 10);
     expect(getResumePath('first')).toBe('/read/essay-2');
+  });
+
+  it('tracks read essays independently of scroll order', () => {
+    markEssayRead('essay-a');
+    markEssayRead('essay-z');
+    expect(isEssayRead('essay-a')).toBe(true);
+    expect(isEssayRead('essay-z')).toBe(true);
+    expect(isEssayRead('essay-m')).toBe(false);
+    markEssayRead('essay-a');
+    expect(getReadStats(100)).toEqual({ read: 2, total: 100, percent: 2 });
+  });
+
+  it('preserves read essays when saving scroll', () => {
+    markEssayRead('essay-1');
+    saveScroll('essay-2', 50);
+    expect(isEssayRead('essay-1')).toBe(true);
+    expect(getScroll('essay-2')).toBe(50);
+  });
+
+  it('seeds demo reads only when none marked yet', () => {
+    seedDemoReadsIfEmpty();
+    expect(DEMO_READ_ESSAY_IDS.every((id) => isEssayRead(id))).toBe(true);
+    markEssayRead('custom-essay');
+    seedDemoReadsIfEmpty();
+    expect(isEssayRead('custom-essay')).toBe(true);
+    expect(getReadStats(countableEssayCount).read).toBe(DEMO_READ_ESSAY_IDS.length + 1);
+  });
+
+  it('ignores reference essays for read state and stats', () => {
+    markEssayRead('bibliography');
+    markEssayRead('glossary');
+    markEssayRead('essay-1');
+    expect(isEssayRead('bibliography')).toBe(false);
+    expect(isEssayRead('glossary')).toBe(false);
+    expect(getReadStats(countableEssayCount).read).toBe(1);
+  });
+
+  it('migrates legacy progress without readEssayIds', () => {
+    localStorage.setItem('sequences-reader:progress', JSON.stringify({
+      lastEssayId: 'essay-1',
+      scrollByEssay: { 'essay-1': 10 },
+      updatedAt: 1,
+    }));
+    expect(isEssayRead('essay-1')).toBe(false);
+    saveScroll('essay-1', 20);
+    markEssayRead('essay-1');
+    expect(isEssayRead('essay-1')).toBe(true);
+    expect(getScroll('essay-1')).toBe(20);
   });
 });
