@@ -7,7 +7,8 @@ Personal offline reader for [The Sequences](https://www.readthesequences.com/). 
 - PWA on iPhone; normal website on laptop.
 - Entire corpus available offline after initial load (target cache budget ~100MB acceptable).
 - Progress syncs across devices (last-write-wins).
-- Table of contents mirrors readthesequences.com exactly; TOC is a separate page.
+- Single-route SPA at `/`: reader and table of contents are two panels on one page; horizontal slide between them (swipe left/right or bottom nav icons). TOC structure mirrors readthesequences.com.
+- Opens last-read essay at saved scroll position (local-first; first visit starts at corpus order).
 - Startup splash: fullscreen ink-in-water canvas animation (~2.6s, no text); plays on first visit and hard refresh only (`localStorage` + `navigation.type === 'reload'`).
 - UX details (theme, animations, typography) otherwise decided during build.
 

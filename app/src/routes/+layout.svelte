@@ -28,10 +28,6 @@
 {/if}
 
 <div class="shell" class:obscured={splashState !== 'done'}>
-  <nav class="bar">
-    <a href="/">The Sequences</a>
-    <a href="/toc">Contents</a>
-  </nav>
   {@render children()}
 </div>
 
