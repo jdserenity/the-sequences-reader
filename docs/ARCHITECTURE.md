@@ -8,7 +8,8 @@ Personal offline reader for [The Sequences](https://www.readthesequences.com/). 
 - Entire corpus available offline after initial load (target cache budget ~100MB acceptable).
 - Progress syncs across devices (last-write-wins).
 - Table of contents mirrors readthesequences.com exactly; TOC is a separate page.
-- UX details (theme, animations, typography) decided during build.
+- Startup splash: fullscreen ink-in-water canvas animation (~2.6s, no text); plays on first visit and hard refresh only (`localStorage` + `navigation.type === 'reload'`).
+- UX details (theme, animations, typography) otherwise decided during build.
 
 ## Content
 
