@@ -1,13 +1,9 @@
 <script lang="ts">
-  import { corpus } from '$lib/corpus';
-  const first = corpus.essays[0];
+  import { onMount } from 'svelte';
+  import AppShell from '$lib/components/AppShell.svelte';
+  import { initApp } from '$lib/app.svelte';
+
+  onMount(() => initApp());
 </script>
 
-<main>
-  <h1>The Sequences</h1>
-  <p class="muted">Personal offline reader. {corpus.essays.length} essays.</p>
-  <p><a href="/toc">Table of contents</a></p>
-  {#if first}
-    <p><a href="/read/{first.id}">Start reading →</a></p>
-  {/if}
-</main>
+<AppShell />
