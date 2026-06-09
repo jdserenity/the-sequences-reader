@@ -2,6 +2,7 @@
 
 ## Open
 
+- [ ] Footnote fidelity: if reading shows widespread mismatches, spike re-scraping **rendered HTML** (not `?action=markdown`) on one essay and compare; only re-run full corpus if clearly better
 - [ ] UX polish during build: theme (light/dark/system), completion animations, typography, iOS install hints — owner decides while implementing
 - [ ] PWA: service worker caches **entire** prerendered corpus for offline read on iPhone
 - [ ] Progress UI: per-book, per-chapter, per-essay bars; completion feedback on essay/chapter finish
