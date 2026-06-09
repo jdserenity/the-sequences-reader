@@ -1,5 +1,5 @@
 import { corpus } from '$lib/corpus';
-import { getLastEssayId } from '$lib/progress';
+import { getLastEssayId, seedDemoReadsIfEmpty } from '$lib/progress';
 
 export type Panel = 'read' | 'toc';
 
@@ -10,6 +10,7 @@ function firstEssayId(): string {
 export const app = $state({ panel: 'read' as Panel, essayId: firstEssayId() });
 
 export function initApp(): void {
+  seedDemoReadsIfEmpty();
   app.essayId = getLastEssayId() ?? firstEssayId();
 }
 
