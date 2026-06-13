@@ -34,6 +34,11 @@ export { corpusWordCount };
 
 const byId = new Map<string, EssayEntry>(corpus.essays.map((e) => [e.id, e]));
 const byOrder = [...corpus.essays].sort((a, b) => a.order - b.order);
+/** Reading sequence: corpus order with bibliography and glossary deferred to the end. */
+export const readingNavOrder = [
+  ...byOrder.filter((e) => !isReferenceEssay(e.id)),
+  ...byOrder.filter((e) => isReferenceEssay(e.id)),
+];
 
 export function getEssay(id: string): EssayEntry | undefined { return byId.get(id); }
 
@@ -42,7 +47,7 @@ export function getEssayBody(id: string): string | undefined { return essayBodie
 export function getEssayWordCount(id: string): number { return essayWordCounts.get(id) ?? 0; }
 
 export function getNeighbors(id: string): { prev?: EssayEntry; next?: EssayEntry } {
-  const i = byOrder.findIndex((e) => e.id === id);
+  const i = readingNavOrder.findIndex((e) => e.id === id);
   if (i < 0) return {};
-  return { prev: byOrder[i - 1], next: byOrder[i + 1] };
+  return { prev: readingNavOrder[i - 1], next: readingNavOrder[i + 1] };
 }

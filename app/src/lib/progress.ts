@@ -1,6 +1,7 @@
 import { isReferenceEssay } from './corpus';
 
 const STORAGE_KEY = 'sequences-reader:progress';
+let readGeneration = 0;
 
 export type ReadingProgress = {
   lastEssayId: string;
@@ -58,6 +59,8 @@ export function saveScroll(essayId: string, scrollY: number): void {
   writeStore({ lastEssayId: essayId, scrollByEssay, readEssayIds: prev?.readEssayIds ?? [], updatedAt: Date.now() });
 }
 
+export function getReadGeneration(): number { return readGeneration; }
+
 export function isEssayRead(essayId: string): boolean {
   if (isReferenceEssay(essayId)) return false;
   return readStore()?.readEssayIds.includes(essayId) ?? false;
@@ -67,13 +70,15 @@ export function markEssayRead(essayId: string): void {
   if (isReferenceEssay(essayId)) return;
   const prev = readStore();
   const readEssayIds = [...(prev?.readEssayIds ?? [])];
-  if (!readEssayIds.includes(essayId)) readEssayIds.push(essayId);
+  if (readEssayIds.includes(essayId)) return;
+  readEssayIds.push(essayId);
   writeStore({
     lastEssayId: prev?.lastEssayId ?? essayId,
     scrollByEssay: prev?.scrollByEssay ?? {},
     readEssayIds,
     updatedAt: Date.now(),
   });
+  readGeneration++;
 }
 
 export function getReadStats(totalEssays: number): ReadStats {

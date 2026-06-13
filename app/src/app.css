@@ -18,8 +18,8 @@
   line-height: 1.65;
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; overflow: hidden; }
-body { background: var(--bg); color: var(--fg); }
+html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+body { background: var(--bg); color: var(--fg); touch-action: manipulation; }
 a { color: var(--link); }
 .linkish {
   background: none;
@@ -34,7 +34,7 @@ a { color: var(--link); }
 .linkish.read { color: var(--link-read); }
 .linkish.ref { color: var(--link-ref); }
 .app { display: flex; flex-direction: column; height: 100dvh; }
-.app-viewport { flex: 1; overflow: hidden; }
+.app-viewport { flex: 1; overflow: hidden; overscroll-behavior-x: none; }
 .app-track {
   display: flex;
   width: 200%;
@@ -51,12 +51,32 @@ a { color: var(--link); }
 .app-panel[aria-hidden="true"] { pointer-events: none; }
 .panel-scroll {
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
 }
+.read-panel-wrap { position: relative; height: 100%; overflow: hidden; }
+.essay-progress {
+  position: absolute;
+  top: env(safe-area-inset-top, 0);
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 5;
+  background: var(--border);
+  pointer-events: none;
+}
+.essay-progress-fill {
+  height: 100%;
+  background: var(--link-read);
+  transform-origin: left center;
+  will-change: transform;
+}
 main { max-width: 42rem; margin: 0 auto; padding: 1rem 1.25rem 1.5rem; }
-.read-panel main { padding-top: 4.5rem; }
+.read-panel main { padding-top: 1.25rem; }
 nav.bottom-bar {
   flex-shrink: 0;
   display: flex;
@@ -122,7 +142,8 @@ nav.essay-nav {
   font-weight: 600;
   text-align: center;
 }
-.prose a { color: var(--link); }
+.prose a { color: var(--link); word-break: break-word; }
+.prose img, .prose table, .prose pre { max-width: 100%; }
 .prose .footnote-num { color: var(--link); font-weight: 600; margin-right: 0.15em; }
 .prose .footnotes-collapse { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
 .prose .footnotes-collapse summary {

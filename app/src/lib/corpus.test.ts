@@ -3,6 +3,7 @@ import {
   corpus,
   corpusWordCount,
   countableEssayCount,
+  getNeighbors,
   getEssayWordCount,
   isReferenceEssay,
   tocReference,
@@ -23,5 +24,22 @@ describe('corpus word counts', () => {
     expect(countableEssayCount).toBe(corpus.essays.length - 2);
     expect(getEssayWordCount('bibliography')).toBeGreaterThan(0);
     expect(getEssayWordCount('glossary')).toBeGreaterThan(0);
+  });
+
+  it('defers bibliography and glossary to the end of reading navigation', () => {
+    const intro = getNeighbors('biases-an-introduction');
+    expect(intro.next?.id).toBe('what-do-i-mean-by-rationality');
+    expect(intro.next?.id).not.toBe('bibliography');
+
+    const last = getNeighbors('go-forth-and-create-the-art');
+    expect(last.next?.id).toBe('bibliography');
+
+    const bib = getNeighbors('bibliography');
+    expect(bib.prev?.id).toBe('go-forth-and-create-the-art');
+    expect(bib.next?.id).toBe('glossary');
+
+    const glossary = getNeighbors('glossary');
+    expect(glossary.prev?.id).toBe('bibliography');
+    expect(glossary.next).toBeUndefined();
   });
 });

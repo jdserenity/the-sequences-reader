@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { corpusWordCount, countableEssayCount, tocFrontMatter, tocReference } from '$lib/corpus';
   import { showRead } from '$lib/app.svelte';
-  import { getReadStats, isEssayRead } from '$lib/progress';
+  import { getReadStats, getReadGeneration, isEssayRead } from '$lib/progress';
   import {
     delay,
     TOC_DETAIL_ENTER_MS,
@@ -30,7 +30,8 @@
   let animating = $state(false);
   let isMobile = $state(true);
 
-  const stats = $derived(getReadStats(countableEssayCount));
+  const readGeneration = $derived(getReadGeneration());
+  const stats = $derived.by(() => { readGeneration; return getReadStats(countableEssayCount); });
   const detailKeys = $derived.by(() => {
     const keys = [...openSections];
     for (const k of exitingKeys) if (!keys.includes(k)) keys.push(k);
@@ -121,7 +122,7 @@
           <nav class="toc-sections" aria-label="Sections">
             {#each tocFrontMatter as item (item.id)}
               <div class="toc-direct-link">
-                <button type="button" class="linkish" class:read={isEssayRead(item.id)} onclick={() => showRead(item.id)}>{item.title}</button>
+                <button type="button" class="linkish" class:read={readGeneration >= 0 && isEssayRead(item.id)} onclick={() => showRead(item.id)}>{item.title}</button>
               </div>
             {/each}
             {#each tocBookSections as section (section.key)}

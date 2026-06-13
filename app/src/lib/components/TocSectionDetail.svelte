@@ -1,11 +1,12 @@
 <script lang="ts">
   import { showRead } from '$lib/app.svelte';
-  import { isEssayRead } from '$lib/progress';
+  import { getReadGeneration, isEssayRead } from '$lib/progress';
   import { getBookForSection, type TocSectionKey } from '$lib/tocSections';
 
   let { sectionKey }: { sectionKey: TocSectionKey } = $props();
 
   const book = $derived(getBookForSection(sectionKey));
+  const readGeneration = $derived(getReadGeneration());
 </script>
 
 {#if book}
@@ -15,7 +16,7 @@
       <p class="sequence">{seq.title}</p>
       <ol>
         {#each seq.essays as essay}
-          <li><button type="button" class="linkish" class:read={isEssayRead(essay.id)} onclick={() => showRead(essay.id)}>{essay.title}</button></li>
+          <li><button type="button" class="linkish" class:read={readGeneration >= 0 && isEssayRead(essay.id)} onclick={() => showRead(essay.id)}>{essay.title}</button></li>
         {/each}
       </ol>
     {/each}
