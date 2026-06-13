@@ -1,7 +1,7 @@
 import { isReferenceEssay } from './corpus';
+import { bumpReadEpoch } from './progress.svelte';
 
 const STORAGE_KEY = 'sequences-reader:progress';
-let readGeneration = 0;
 
 export type ReadingProgress = {
   lastEssayId: string;
@@ -59,8 +59,6 @@ export function saveScroll(essayId: string, scrollY: number): void {
   writeStore({ lastEssayId: essayId, scrollByEssay, readEssayIds: prev?.readEssayIds ?? [], updatedAt: Date.now() });
 }
 
-export function getReadGeneration(): number { return readGeneration; }
-
 export function isEssayRead(essayId: string): boolean {
   if (isReferenceEssay(essayId)) return false;
   return readStore()?.readEssayIds.includes(essayId) ?? false;
@@ -78,7 +76,7 @@ export function markEssayRead(essayId: string): void {
     readEssayIds,
     updatedAt: Date.now(),
   });
-  readGeneration++;
+  bumpReadEpoch();
 }
 
 export function getReadStats(totalEssays: number): ReadStats {
@@ -97,6 +95,7 @@ export function seedDemoReadsIfEmpty(): void {
     readEssayIds: [...DEMO_READ_ESSAY_IDS],
     updatedAt: Date.now(),
   });
+  bumpReadEpoch();
 }
 
 export function attachScrollTracking(essayId: string, el: HTMLElement): () => void {

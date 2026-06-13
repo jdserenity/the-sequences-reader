@@ -11,6 +11,13 @@ node_modules/
 dist/
 build/
 coverage/
+.svelte-kit/
+**/.svelte-kit/
+.output/
+
+# Cloudflare Wrangler local dev state
+.wrangler/
+**/.wrangler/
 
 # Python
 .venv/

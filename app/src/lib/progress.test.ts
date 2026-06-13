@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { countableEssayCount } from './corpus';
+import { readState } from './progress.svelte';
 import {
   DEMO_READ_ESSAY_IDS,
-  getReadGeneration,
   getLastEssayId,
   getReadStats,
   getResumePath,
@@ -26,7 +26,7 @@ function mockLocalStorage(): void {
 }
 
 describe('progress', () => {
-  beforeEach(() => { mockLocalStorage(); });
+  beforeEach(() => { mockLocalStorage(); readState.epoch = 0; });
   afterEach(() => { vi.unstubAllGlobals(); });
 
   it('returns null when nothing saved', () => {
@@ -60,15 +60,15 @@ describe('progress', () => {
   });
 
   it('tracks read essays independently of scroll order', () => {
-    expect(getReadGeneration()).toBe(0);
+    expect(readState.epoch).toBe(0);
     markEssayRead('essay-a');
     markEssayRead('essay-z');
-    expect(getReadGeneration()).toBe(2);
+    expect(readState.epoch).toBe(2);
     expect(isEssayRead('essay-a')).toBe(true);
     expect(isEssayRead('essay-z')).toBe(true);
     expect(isEssayRead('essay-m')).toBe(false);
     markEssayRead('essay-a');
-    expect(getReadGeneration()).toBe(2);
+    expect(readState.epoch).toBe(2);
     expect(getReadStats(100)).toEqual({ read: 2, total: 100, percent: 2 });
   });
 
