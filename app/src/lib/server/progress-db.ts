@@ -1,47 +1,54 @@
+import { mergeProgress } from '$lib/progress-merge';
 import type { ReadingProgress } from '$lib/progress-types';
+import { normalizeProgress } from '$lib/progress-types';
 
 type ProgressRow = {
   last_essay_id: string;
   scroll_by_essay: string;
   read_essay_ids: string;
   updated_at: number;
+  scroll_updated_at: number;
 };
 
 export function parseProgressRow(row: ProgressRow): ReadingProgress {
-  return {
+  return normalizeProgress({
     lastEssayId: row.last_essay_id,
     scrollByEssay: JSON.parse(row.scroll_by_essay) as Record<string, number>,
     readEssayIds: JSON.parse(row.read_essay_ids) as string[],
     updatedAt: row.updated_at,
-  };
+    scrollUpdatedAt: row.scroll_updated_at,
+  });
 }
 
 export async function loadProgress(db: D1Database): Promise<ReadingProgress | null> {
   const row = await db.prepare(
-    'SELECT last_essay_id, scroll_by_essay, read_essay_ids, updated_at FROM progress WHERE id = 1',
+    'SELECT last_essay_id, scroll_by_essay, read_essay_ids, updated_at, scroll_updated_at FROM progress WHERE id = 1',
   ).first<ProgressRow>();
   return row ? parseProgressRow(row) : null;
 }
 
 export async function saveProgress(db: D1Database, progress: ReadingProgress): Promise<ReadingProgress> {
   const existing = await loadProgress(db);
-  if (existing && progress.updatedAt < existing.updatedAt) return existing;
+  const incoming = normalizeProgress(progress);
+  const { progress: merged } = mergeProgress(existing, incoming);
+  const store = merged ?? incoming;
   await db.prepare(
-    `INSERT INTO progress (id, last_essay_id, scroll_by_essay, read_essay_ids, updated_at)
-     VALUES (1, ?, ?, ?, ?)
+    `INSERT INTO progress (id, last_essay_id, scroll_by_essay, read_essay_ids, updated_at, scroll_updated_at)
+     VALUES (1, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        last_essay_id = excluded.last_essay_id,
        scroll_by_essay = excluded.scroll_by_essay,
        read_essay_ids = excluded.read_essay_ids,
-       updated_at = excluded.updated_at
-     WHERE excluded.updated_at >= progress.updated_at`,
+       updated_at = excluded.updated_at,
+       scroll_updated_at = excluded.scroll_updated_at`,
   ).bind(
-    progress.lastEssayId,
-    JSON.stringify(progress.scrollByEssay),
-    JSON.stringify(progress.readEssayIds),
-    progress.updatedAt,
+    store.lastEssayId,
+    JSON.stringify(store.scrollByEssay),
+    JSON.stringify(store.readEssayIds),
+    store.updatedAt,
+    store.scrollUpdatedAt,
   ).run();
-  return (await loadProgress(db)) ?? progress;
+  return (await loadProgress(db)) ?? store;
 }
 
 export function isReadingProgress(value: unknown): value is ReadingProgress {

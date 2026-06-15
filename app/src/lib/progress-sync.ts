@@ -1,5 +1,6 @@
-import { mergeProgress, shouldPushAfterMerge } from './progress-merge';
+import { mergeProgress, shouldPushAfterSync } from './progress-merge';
 import type { ReadingProgress } from './progress-types';
+import { normalizeProgress } from './progress-types';
 import { bumpReadEpoch } from './progress.svelte';
 
 const API = '/api/progress';
@@ -12,13 +13,30 @@ type ProgressIO = {
   write: (store: ReadingProgress) => void;
 };
 
+function readIdsChanged(a: ReadingProgress | null, b: ReadingProgress): boolean {
+  if (!a) return true;
+  if (a.readEssayIds.length !== b.readEssayIds.length) return true;
+  const set = new Set(a.readEssayIds);
+  return b.readEssayIds.some((id) => !set.has(id));
+}
+
+function localChanged(a: ReadingProgress | null, b: ReadingProgress): boolean {
+  if (!a) return true;
+  return readIdsChanged(a, b)
+    || a.lastEssayId !== b.lastEssayId
+    || a.updatedAt !== b.updatedAt
+    || (a.scrollUpdatedAt ?? a.updatedAt) !== (b.scrollUpdatedAt ?? b.updatedAt)
+    || JSON.stringify(a.scrollByEssay) !== JSON.stringify(b.scrollByEssay);
+}
+
 export async function fetchRemoteProgress(fetchFn: typeof fetch = fetch): Promise<ReadingProgress | null> {
   try {
     const res = await fetchFn(API);
     if (res.status === 503) return null;
     if (!res.ok) return null;
     const data: unknown = await res.json();
-    return data as ReadingProgress | null;
+    if (!data) return null;
+    return normalizeProgress(data as ReadingProgress);
   } catch { return null; }
 }
 
@@ -27,27 +45,23 @@ export async function pushRemoteProgress(progress: ReadingProgress, fetchFn: typ
     const res = await fetchFn(API, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(progress),
+      body: JSON.stringify(normalizeProgress(progress)),
     });
     if (!res.ok) return null;
-    return await res.json() as ReadingProgress;
+    return normalizeProgress(await res.json() as ReadingProgress);
   } catch { return null; }
 }
 
 export async function syncProgress(io: ProgressIO, fetchFn: typeof fetch = fetch): Promise<void> {
   const local = io.read();
   const remote = await fetchRemoteProgress(fetchFn);
-  const { progress, source } = mergeProgress(local, remote);
+  const { progress } = mergeProgress(local, remote);
   if (!progress) return;
-  const changed = !local
-    || progress.updatedAt !== local.updatedAt
-    || progress.lastEssayId !== local.lastEssayId
-    || progress.readEssayIds.length !== local.readEssayIds.length;
-  if (changed) {
+  if (localChanged(local, progress)) {
     io.write(progress);
     bumpReadEpoch();
   }
-  if (shouldPushAfterMerge(source, local, remote)) await pushRemoteProgress(progress, fetchFn);
+  if (shouldPushAfterSync(remote, progress)) await pushRemoteProgress(progress, fetchFn);
 }
 
 export function scheduleProgressPush(io: ProgressIO, fetchFn: typeof fetch = fetch): void {
@@ -55,6 +69,6 @@ export function scheduleProgressPush(io: ProgressIO, fetchFn: typeof fetch = fet
   pushTimer = setTimeout(() => {
     pushTimer = null;
     const local = io.read();
-    if (local) void pushRemoteProgress(local, fetchFn);
+    if (local) void pushRemoteProgress(normalizeProgress(local), fetchFn);
   }, PUSH_DEBOUNCE_MS);
 }

@@ -3,41 +3,22 @@ import type { ReadingProgress, ReadStats } from './progress-types';
 import { scheduleProgressPush, syncProgress } from './progress-sync';
 import { bumpReadEpoch } from './progress.svelte';
 
-const STORAGE_KEY = 'sequences-reader:progress';
-
-/** Scattered demo reads so TOC polish is visible before real completion tracking ships. */
-export const DEMO_READ_ESSAY_IDS = [
-  'biases-an-introduction',
-  'what-do-i-mean-by-rationality',
-  'the-proper-use-of-humility',
-];
+let memoryStore: ReadingProgress | null = null;
 
 const progressIo = {
   read: readStore,
   write: (store: ReadingProgress) => writeStore(store, false),
 };
 
-function readStore(): ReadingProgress | null {
-  if (typeof localStorage === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<ReadingProgress>;
-    if (!parsed?.lastEssayId || typeof parsed.scrollByEssay !== 'object') return null;
-    return {
-      lastEssayId: parsed.lastEssayId,
-      scrollByEssay: parsed.scrollByEssay,
-      readEssayIds: Array.isArray(parsed.readEssayIds) ? parsed.readEssayIds : [],
-      updatedAt: parsed.updatedAt ?? Date.now(),
-    };
-  } catch { return null; }
-}
+function readStore(): ReadingProgress | null { return memoryStore; }
 
 function writeStore(store: ReadingProgress, schedulePush = true): void {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  memoryStore = store;
   if (schedulePush) scheduleProgressPush(progressIo);
 }
+
+/** Test helper — clears in-memory progress cache. */
+export function resetProgressStore(): void { memoryStore = null; }
 
 export function getLastEssayId(): string | null {
   return readStore()?.lastEssayId ?? null;
@@ -55,7 +36,14 @@ export function getScroll(essayId: string): number {
 export function saveScroll(essayId: string, scrollY: number): void {
   const prev = readStore();
   const scrollByEssay = { ...prev?.scrollByEssay, [essayId]: Math.max(0, scrollY) };
-  writeStore({ lastEssayId: essayId, scrollByEssay, readEssayIds: prev?.readEssayIds ?? [], updatedAt: Date.now() });
+  const now = Date.now();
+  writeStore({
+    lastEssayId: essayId,
+    scrollByEssay,
+    readEssayIds: prev?.readEssayIds ?? [],
+    updatedAt: prev?.updatedAt ?? now,
+    scrollUpdatedAt: now,
+  });
 }
 
 export function isEssayRead(essayId: string): boolean {
@@ -84,6 +72,7 @@ export function markEssaysRead(essayIds: string[]): void {
     scrollByEssay: prev?.scrollByEssay ?? {},
     readEssayIds,
     updatedAt: Date.now(),
+    scrollUpdatedAt: prev?.scrollUpdatedAt ?? prev?.updatedAt ?? Date.now(),
   });
   bumpReadEpoch();
 }
@@ -103,18 +92,6 @@ export function getReadStats(totalEssays: number, wordsTotal: number): ReadStats
   const percent = total > 0 ? (read / total) * 100 : 0;
   const wordsRead = getReadWordCount(readEssayIds);
   return { read, total, percent, wordsRead, wordsTotal };
-}
-
-export function seedDemoReadsIfEmpty(): void {
-  const prev = readStore();
-  if (prev && prev.readEssayIds.length > 0) return;
-  writeStore({
-    lastEssayId: prev?.lastEssayId ?? DEMO_READ_ESSAY_IDS[0],
-    scrollByEssay: prev?.scrollByEssay ?? {},
-    readEssayIds: [...DEMO_READ_ESSAY_IDS],
-    updatedAt: Date.now(),
-  }, false);
-  bumpReadEpoch();
 }
 
 export async function syncProgressFromServer(): Promise<void> {
@@ -137,4 +114,4 @@ export function attachScrollTracking(essayId: string, el: HTMLElement): () => vo
   };
 }
 
-export { readStore as readLocalProgress, type ReadingProgress, type ReadStats };
+export { readStore as readProgress, type ReadingProgress, type ReadStats };

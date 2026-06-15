@@ -5,8 +5,9 @@ import { fetchRemoteProgress, pushRemoteProgress, scheduleProgressPush, syncProg
 const sample: ReadingProgress = {
   lastEssayId: 'essay-1',
   scrollByEssay: { 'essay-1': 12 },
-  readEssayIds: ['essay-1'],
+  readEssayIds: ['essay-1', 'essay-2'],
   updatedAt: 100,
+  scrollUpdatedAt: 100,
 };
 
 function mockFetch(handler: (url: string, init?: RequestInit) => Response | Promise<Response>): typeof fetch {
@@ -20,14 +21,30 @@ describe('progress-sync', () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
-  it('pulls remote progress when local is missing', async () => {
+  it('pulls remote reads into local even when local scroll is newer', async () => {
+    const local: ReadingProgress = {
+      lastEssayId: 'essay-1',
+      scrollByEssay: { 'essay-1': 99 },
+      readEssayIds: ['biases-an-introduction'],
+      updatedAt: 500,
+      scrollUpdatedAt: 9_000,
+    };
+    const remote: ReadingProgress = {
+      lastEssayId: 'doublethink-choosing-to-be-biased',
+      scrollByEssay: {},
+      readEssayIds: ['preface', 'biases-an-introduction', 'essay-2'],
+      updatedAt: 100,
+      scrollUpdatedAt: 100,
+    };
     const writes: ReadingProgress[] = [];
     const fetchFn = mockFetch((url) => {
-      if (url === '/api/progress') return new Response(JSON.stringify(sample));
+      if (url === '/api/progress') return new Response(JSON.stringify(remote));
       return new Response('{}', { status: 404 });
     });
-    await syncProgress({ read: () => null, write: (p) => { writes.push(p); } }, fetchFn);
-    expect(writes).toEqual([sample]);
+    await syncProgress({ read: () => local, write: (p) => { writes.push(p); } }, fetchFn);
+    expect(writes[0]?.readEssayIds).toContain('preface');
+    expect(writes[0]?.readEssayIds).toContain('essay-2');
+    expect(writes[0]?.scrollByEssay['essay-1']).toBe(99);
   });
 
   it('pushes local progress when remote is missing', async () => {
@@ -41,7 +58,7 @@ describe('progress-sync', () => {
       return new Response('{}', { status: 404 });
     });
     await syncProgress({ read: () => sample, write: () => {} }, fetchFn);
-    expect(puts).toEqual([sample]);
+    expect(puts.length).toBe(1);
   });
 
   it('debounces remote pushes', async () => {

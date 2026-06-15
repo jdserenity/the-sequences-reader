@@ -1,0 +1,1 @@
+ALTER TABLE progress ADD COLUMN scroll_updated_at INTEGER NOT NULL DEFAULT 0;

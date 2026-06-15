@@ -1,5 +1,5 @@
 import { corpus } from '$lib/corpus';
-import { getLastEssayId, seedDemoReadsIfEmpty, syncProgressFromServer } from '$lib/progress';
+import { getLastEssayId, syncProgressFromServer } from '$lib/progress';
 
 export type Panel = 'read' | 'toc';
 
@@ -11,7 +11,6 @@ export const app = $state({ panel: 'read' as Panel, essayId: firstEssayId() });
 export const tocUi = $state({ collapseRequest: 0 });
 
 export async function initApp(): Promise<void> {
-  seedDemoReadsIfEmpty();
   await syncProgressFromServer();
   app.essayId = getLastEssayId() ?? firstEssayId();
 }
