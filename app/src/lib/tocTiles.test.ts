@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_DETAIL_TILES_DESKTOP,
   canOpenSection,
+  hasOpenTocTiles,
   isAtSectionLimit,
   tileCount,
   toggleOpenSection,
@@ -38,5 +39,11 @@ describe('toggleOpenSection', () => {
   it('reports tile count including toc', () => {
     expect(tileCount([book('a')])).toBe(2);
     expect(MAX_DETAIL_TILES_DESKTOP).toBe(3);
+  });
+
+  it('detects open toc detail tiles', () => {
+    expect(hasOpenTocTiles([], [])).toBe(false);
+    expect(hasOpenTocTiles([book('a')], [])).toBe(true);
+    expect(hasOpenTocTiles([], [book('a')])).toBe(true);
   });
 });

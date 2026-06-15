@@ -1,14 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { countableEssayCount } from './corpus';
+import { corpusWordCount, countableEssayCount } from './corpus';
 import { readState } from './progress.svelte';
 import {
   DEMO_READ_ESSAY_IDS,
   getLastEssayId,
   getReadStats,
+  getReadWordCount,
   getResumePath,
   getScroll,
   isEssayRead,
   markEssayRead,
+  markEssaysRead,
   saveScroll,
   seedDemoReadsIfEmpty,
 } from './progress';
@@ -69,7 +71,7 @@ describe('progress', () => {
     expect(isEssayRead('essay-m')).toBe(false);
     markEssayRead('essay-a');
     expect(readState.epoch).toBe(2);
-    expect(getReadStats(100)).toEqual({ read: 2, total: 100, percent: 2 });
+    expect(getReadStats(100, 50_000)).toEqual({ read: 2, total: 100, percent: 2, wordsRead: expect.any(Number), wordsTotal: 50_000 });
   });
 
   it('preserves read essays when saving scroll', () => {
@@ -85,7 +87,20 @@ describe('progress', () => {
     markEssayRead('custom-essay');
     seedDemoReadsIfEmpty();
     expect(isEssayRead('custom-essay')).toBe(true);
-    expect(getReadStats(countableEssayCount).read).toBe(DEMO_READ_ESSAY_IDS.length + 1);
+    expect(getReadStats(countableEssayCount, corpusWordCount).read).toBe(DEMO_READ_ESSAY_IDS.length + 1);
+  });
+
+  it('bulk mark dedupes reference essays and existing reads', () => {
+    markEssaysRead(['essay-a', 'essay-a', 'bibliography']);
+    expect(isEssayRead('essay-a')).toBe(true);
+    expect(getReadStats(countableEssayCount, corpusWordCount).read).toBe(1);
+  });
+
+  it('sums word counts for read essays only', () => {
+    markEssaysRead(['preface', 'biases-an-introduction']);
+    const words = getReadWordCount(['preface', 'biases-an-introduction', 'bibliography']);
+    expect(words).toBeGreaterThan(0);
+    expect(getReadStats(countableEssayCount, corpusWordCount).wordsRead).toBe(words);
   });
 
   it('ignores reference essays for read state and stats', () => {
@@ -94,7 +109,7 @@ describe('progress', () => {
     markEssayRead('essay-1');
     expect(isEssayRead('bibliography')).toBe(false);
     expect(isEssayRead('glossary')).toBe(false);
-    expect(getReadStats(countableEssayCount).read).toBe(1);
+    expect(getReadStats(countableEssayCount, corpusWordCount).read).toBe(1);
   });
 
   it('migrates legacy progress without readEssayIds', () => {

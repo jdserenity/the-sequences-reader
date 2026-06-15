@@ -1,16 +1,9 @@
-import { isReferenceEssay } from './corpus';
+import { getEssayWordCount, isReferenceEssay } from './corpus';
+import type { ReadingProgress, ReadStats } from './progress-types';
+import { scheduleProgressPush, syncProgress } from './progress-sync';
 import { bumpReadEpoch } from './progress.svelte';
 
 const STORAGE_KEY = 'sequences-reader:progress';
-
-export type ReadingProgress = {
-  lastEssayId: string;
-  scrollByEssay: Record<string, number>;
-  readEssayIds: string[];
-  updatedAt: number;
-};
-
-export type ReadStats = { read: number; total: number; percent: number };
 
 /** Scattered demo reads so TOC polish is visible before real completion tracking ships. */
 export const DEMO_READ_ESSAY_IDS = [
@@ -18,6 +11,11 @@ export const DEMO_READ_ESSAY_IDS = [
   'what-do-i-mean-by-rationality',
   'the-proper-use-of-humility',
 ];
+
+const progressIo = {
+  read: readStore,
+  write: (store: ReadingProgress) => writeStore(store, false),
+};
 
 function readStore(): ReadingProgress | null {
   if (typeof localStorage === 'undefined') return null;
@@ -35,9 +33,10 @@ function readStore(): ReadingProgress | null {
   } catch { return null; }
 }
 
-function writeStore(store: ReadingProgress): void {
+function writeStore(store: ReadingProgress, schedulePush = true): void {
   if (typeof localStorage === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  if (schedulePush) scheduleProgressPush(progressIo);
 }
 
 export function getLastEssayId(): string | null {
@@ -66,12 +65,22 @@ export function isEssayRead(essayId: string): boolean {
 
 export function markEssayRead(essayId: string): void {
   if (isReferenceEssay(essayId)) return;
+  markEssaysRead([essayId]);
+}
+
+export function markEssaysRead(essayIds: string[]): void {
+  const countable = essayIds.filter((id) => !isReferenceEssay(id));
+  if (!countable.length) return;
   const prev = readStore();
-  const readEssayIds = [...(prev?.readEssayIds ?? [])];
-  if (readEssayIds.includes(essayId)) return;
-  readEssayIds.push(essayId);
+  const readSet = new Set(prev?.readEssayIds ?? []);
+  let changed = false;
+  for (const id of countable) {
+    if (!readSet.has(id)) { readSet.add(id); changed = true; }
+  }
+  if (!changed) return;
+  const readEssayIds = [...readSet];
   writeStore({
-    lastEssayId: prev?.lastEssayId ?? essayId,
+    lastEssayId: prev?.lastEssayId ?? countable[countable.length - 1],
     scrollByEssay: prev?.scrollByEssay ?? {},
     readEssayIds,
     updatedAt: Date.now(),
@@ -79,11 +88,21 @@ export function markEssayRead(essayId: string): void {
   bumpReadEpoch();
 }
 
-export function getReadStats(totalEssays: number): ReadStats {
-  const read = readStore()?.readEssayIds.filter((id) => !isReferenceEssay(id)).length ?? 0;
+export function getReadWordCount(readEssayIds: string[]): number {
+  let sum = 0;
+  for (const id of readEssayIds) {
+    if (!isReferenceEssay(id)) sum += getEssayWordCount(id);
+  }
+  return sum;
+}
+
+export function getReadStats(totalEssays: number, wordsTotal: number): ReadStats {
+  const readEssayIds = readStore()?.readEssayIds ?? [];
+  const read = readEssayIds.filter((id) => !isReferenceEssay(id)).length;
   const total = totalEssays;
   const percent = total > 0 ? (read / total) * 100 : 0;
-  return { read, total, percent };
+  const wordsRead = getReadWordCount(readEssayIds);
+  return { read, total, percent, wordsRead, wordsTotal };
 }
 
 export function seedDemoReadsIfEmpty(): void {
@@ -94,8 +113,12 @@ export function seedDemoReadsIfEmpty(): void {
     scrollByEssay: prev?.scrollByEssay ?? {},
     readEssayIds: [...DEMO_READ_ESSAY_IDS],
     updatedAt: Date.now(),
-  });
+  }, false);
   bumpReadEpoch();
+}
+
+export async function syncProgressFromServer(): Promise<void> {
+  await syncProgress(progressIo);
 }
 
 export function attachScrollTracking(essayId: string, el: HTMLElement): () => void {
@@ -113,3 +136,5 @@ export function attachScrollTracking(essayId: string, el: HTMLElement): () => vo
     saveScroll(essayId, el.scrollTop);
   };
 }
+
+export { readStore as readLocalProgress, type ReadingProgress, type ReadStats };

@@ -21,3 +21,7 @@ export function toggleOpenSection(open: TocSectionKey[], key: TocSectionKey, mob
 }
 
 export function tileCount(open: TocSectionKey[]): number { return 1 + open.length; }
+
+export function hasOpenTocTiles(openSections: TocSectionKey[], exitingKeys: TocSectionKey[]): boolean {
+  return openSections.length >= 1 || exitingKeys.length >= 1;
+}

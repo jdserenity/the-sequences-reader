@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { corpusWordCount, countableEssayCount, tocFrontMatter, tocReference } from '$lib/corpus';
-  import { showRead } from '$lib/app.svelte';
+  import { showRead, tocUi } from '$lib/app.svelte';
   import { getReadStats, isEssayRead } from '$lib/progress';
   import { readState } from '$lib/progress.svelte';
   import {
@@ -14,8 +14,8 @@
     TOC_VIGNETTE_OUT_MS,
   } from '$lib/tocAnim';
   import { tocBookSections, type TocSectionKey } from '$lib/tocSections';
-  import { canOpenSection, isAtSectionLimit, MAX_DETAIL_TILES_DESKTOP, toggleOpenSection } from '$lib/tocTiles';
-  import { formatWordCount } from '$lib/wordCount';
+  import { canOpenSection, hasOpenTocTiles, isAtSectionLimit, MAX_DETAIL_TILES_DESKTOP, toggleOpenSection } from '$lib/tocTiles';
+  import { formatWordCountProgress } from '$lib/wordCount';
   import TocSectionDetail from './TocSectionDetail.svelte';
 
   const MOBILE_MAX = 767;
@@ -31,7 +31,7 @@
   let animating = $state(false);
   let isMobile = $state(true);
 
-  const stats = $derived.by(() => { readState.epoch; return getReadStats(countableEssayCount); });
+  const stats = $derived.by(() => { readState.epoch; return getReadStats(countableEssayCount, corpusWordCount); });
   const detailKeys = $derived.by(() => {
     const keys = [...openSections];
     for (const k of exitingKeys) if (!keys.includes(k)) keys.push(k);
@@ -50,6 +50,25 @@
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
   });
+
+  $effect(() => {
+    if (!tocUi.collapseRequest) return;
+    untrack(() => {
+      if (hasOpenTocTiles(openSections, exitingKeys)) resetTilesInstant();
+    });
+  });
+
+  function resetTilesInstant(): void {
+    openSections = [];
+    exitingKeys = [];
+    enteringKeys = [];
+    enteringSlow = false;
+    layoutSplit = false;
+    showVignette = false;
+    firstSplitAnim = false;
+    trackShifting = false;
+    animating = false;
+  }
 
   async function openSection(key: TocSectionKey): Promise<void> {
     const firstOpen = openSections.length === 0;
@@ -117,7 +136,7 @@
             <span class="toc-stat-sep">·</span>
             <span class="toc-stat">{stats.percent.toFixed(1)}% of {stats.total}</span>
             <span class="toc-stat-sep">·</span>
-            <span class="toc-stat">{formatWordCount(corpusWordCount)}</span>
+            <span class="toc-stat">{formatWordCountProgress(stats.wordsRead, stats.wordsTotal)}</span>
           </p>
           <nav class="toc-sections" aria-label="Sections">
             {#each tocFrontMatter as item (item.id)}

@@ -51,3 +51,10 @@ export function getNeighbors(id: string): { prev?: EssayEntry; next?: EssayEntry
   if (i < 0) return {};
   return { prev: readingNavOrder[i - 1], next: readingNavOrder[i + 1] };
 }
+
+/** Countable essays from corpus start through essayId inclusive (reading order). */
+export function getCountableEssayIdsThrough(essayId: string): string[] {
+  const i = readingNavOrder.findIndex((e) => e.id === essayId);
+  if (i < 0) return [];
+  return readingNavOrder.slice(0, i + 1).map((e) => e.id);
+}

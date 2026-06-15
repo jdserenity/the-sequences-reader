@@ -3,7 +3,7 @@
   import AppShell from '$lib/components/AppShell.svelte';
   import { initApp } from '$lib/app.svelte';
 
-  onMount(() => initApp());
+  onMount(() => { void initApp(); });
 </script>
 
 <AppShell />

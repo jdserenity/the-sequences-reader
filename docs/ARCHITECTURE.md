@@ -31,9 +31,9 @@ Tracked at all three levels simultaneously:
 
 Also per essay: **resume position** (scroll / reading position inside the essay).
 
-Local progress (localStorage) stores `readEssayIds` (set of completed essays; order-independent). Bibliography and glossary are reference-only: listed at end of TOC in a distinct color, excluded from essay/word totals and completion. TOC header: primary title “The Sequences”, secondary “Table of Contents”; stats line shows essays read, percent of countable total, and corpus word count (countable essays only; per-essay counts from cleaned markdown bodies at app load). Read essay links are tinted light green. Demo reads are seeded on first load when none are marked yet.
+Local progress (localStorage) stores `readEssayIds` (set of completed essays; order-independent). Bibliography and glossary are reference-only: listed at end of TOC in a distinct color, excluded from essay/word totals and completion. TOC header: primary title “The Sequences”, secondary “Table of Contents”; stats line shows essays read, percent of countable total, and words read out of corpus word count (countable essays only; per-essay counts from cleaned markdown bodies at app load). Read essay links are tinted light green. Demo reads seed on first load when none are marked yet.
 
-Conflict resolution: **last-write-wins** when syncing across devices.
+D1 (`sequences-reader-progress`) holds a single progress row (`id = 1`). `GET/PUT /api/progress` on the Pages worker; **last-write-wins** on `updatedAt` (server rejects stale PUTs). Client is local-first: load localStorage, fetch remote, merge winner into localStorage, push if local is newer or remote empty. Writes debounce to D1 (~500ms). Without a D1 binding (plain `vite dev`), sync no-ops and localStorage still works.
 
 ## Stack
 

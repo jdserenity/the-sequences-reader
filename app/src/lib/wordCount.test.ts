@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countWords, formatWordCount } from './wordCount';
+import { countWords, formatWordCount, formatWordCountProgress } from './wordCount';
 
 describe('countWords', () => {
   it('counts plain words', () => {
@@ -22,5 +22,11 @@ describe('countWords', () => {
 describe('formatWordCount', () => {
   it('formats with grouping separator', () => {
     expect(formatWordCount(1234567)).toBe('1,234,567 words');
+  });
+});
+
+describe('formatWordCountProgress', () => {
+  it('formats read and total with grouping separators', () => {
+    expect(formatWordCountProgress(123456, 1234567)).toBe('123,456 / 1,234,567 words');
   });
 });

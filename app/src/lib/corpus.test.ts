@@ -3,6 +3,7 @@ import {
   corpus,
   corpusWordCount,
   countableEssayCount,
+  getCountableEssayIdsThrough,
   getNeighbors,
   getEssayWordCount,
   isReferenceEssay,
@@ -24,6 +25,18 @@ describe('corpus word counts', () => {
     expect(countableEssayCount).toBe(corpus.essays.length - 2);
     expect(getEssayWordCount('bibliography')).toBeGreaterThan(0);
     expect(getEssayWordCount('glossary')).toBeGreaterThan(0);
+  });
+
+  it('getCountableEssayIdsThrough stops at the target essay in reading order', () => {
+    const ids = getCountableEssayIdsThrough('doublethink-choosing-to-be-biased');
+    expect(ids[0]).toBe('preface');
+    expect(ids).toContain('biases-an-introduction');
+    expect(ids).toContain('doublethink-choosing-to-be-biased');
+    expect(ids).not.toContain('bibliography');
+    expect(ids).not.toContain('glossary');
+    const next = getCountableEssayIdsThrough('no-really-ive-deceived-myself');
+    expect(next.length).toBe(ids.length + 1);
+    expect(next.at(-1)).toBe('no-really-ive-deceived-myself');
   });
 
   it('defers bibliography and glossary to the end of reading navigation', () => {

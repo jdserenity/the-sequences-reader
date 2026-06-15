@@ -15,3 +15,7 @@ export function countWords(text: string): number {
 export function formatWordCount(n: number): string {
   return `${n.toLocaleString('en-US')} words`;
 }
+
+export function formatWordCountProgress(read: number, total: number): string {
+  return `${read.toLocaleString('en-US')} / ${total.toLocaleString('en-US')} words`;
+}

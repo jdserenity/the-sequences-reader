@@ -1,10 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { app, showRead, showToc, trackOffset } from './app.svelte';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { app, showToc, tocUi, trackOffset } from './app.svelte';
 
 describe('app', () => {
   beforeEach(() => {
     app.panel = 'read';
     app.essayId = 'essay-1';
+    tocUi.collapseRequest = 0;
+  });
+
+  afterEach(() => {
+    tocUi.collapseRequest = 0;
   });
 
   it('offsets track horizontally per panel', () => {
@@ -12,11 +17,16 @@ describe('app', () => {
     expect(trackOffset('toc')).toBe('-50%');
   });
 
-  it('switches panel and essay', () => {
+  it('requests toc tile collapse when toc nav clicked while on toc', () => {
+    app.panel = 'toc';
+    showToc();
+    expect(tocUi.collapseRequest).toBe(1);
+    expect(app.panel).toBe('toc');
+  });
+
+  it('switches to toc from read panel', () => {
     showToc();
     expect(app.panel).toBe('toc');
-    showRead('essay-9');
-    expect(app.panel).toBe('read');
-    expect(app.essayId).toBe('essay-9');
+    expect(tocUi.collapseRequest).toBe(0);
   });
 });

@@ -1,5 +1,5 @@
 import { corpus } from '$lib/corpus';
-import { getLastEssayId, seedDemoReadsIfEmpty } from '$lib/progress';
+import { getLastEssayId, seedDemoReadsIfEmpty, syncProgressFromServer } from '$lib/progress';
 
 export type Panel = 'read' | 'toc';
 
@@ -8,9 +8,11 @@ function firstEssayId(): string {
 }
 
 export const app = $state({ panel: 'read' as Panel, essayId: firstEssayId() });
+export const tocUi = $state({ collapseRequest: 0 });
 
-export function initApp(): void {
+export async function initApp(): Promise<void> {
   seedDemoReadsIfEmpty();
+  await syncProgressFromServer();
   app.essayId = getLastEssayId() ?? firstEssayId();
 }
 
@@ -20,6 +22,7 @@ export function showRead(essayId?: string): void {
 }
 
 export function showToc(): void {
+  if (app.panel === 'toc') { tocUi.collapseRequest++; return; }
   app.panel = 'toc';
 }
 
