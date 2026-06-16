@@ -64,11 +64,29 @@ export async function syncProgress(io: ProgressIO, fetchFn: typeof fetch = fetch
   if (shouldPushAfterSync(remote, progress)) await pushRemoteProgress(progress, fetchFn);
 }
 
+/** Merge with remote before PUT so scroll-only client state cannot clobber reads. */
+export async function flushProgressPush(io: ProgressIO, fetchFn: typeof fetch = fetch): Promise<void> {
+  const local = io.read();
+  if (!local) return;
+  const remote = await fetchRemoteProgress(fetchFn);
+  const { progress } = mergeProgress(local, remote);
+  if (!progress) return;
+  if (localChanged(local, progress)) {
+    io.write(progress);
+    bumpReadEpoch();
+  }
+  if (!shouldPushAfterSync(remote, progress)) return;
+  const saved = await pushRemoteProgress(progress, fetchFn);
+  if (saved && localChanged(progress, saved)) {
+    io.write(saved);
+    bumpReadEpoch();
+  }
+}
+
 export function scheduleProgressPush(io: ProgressIO, fetchFn: typeof fetch = fetch): void {
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
     pushTimer = null;
-    const local = io.read();
-    if (local) void pushRemoteProgress(normalizeProgress(local), fetchFn);
+    void flushProgressPush(io, fetchFn);
   }, PUSH_DEBOUNCE_MS);
 }

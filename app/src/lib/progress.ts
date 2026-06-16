@@ -4,6 +4,7 @@ import { scheduleProgressPush, syncProgress } from './progress-sync';
 import { bumpReadEpoch } from './progress.svelte';
 
 let memoryStore: ReadingProgress | null = null;
+let hydrated = false;
 
 const progressIo = {
   read: readStore,
@@ -14,11 +15,11 @@ function readStore(): ReadingProgress | null { return memoryStore; }
 
 function writeStore(store: ReadingProgress, schedulePush = true): void {
   memoryStore = store;
-  if (schedulePush) scheduleProgressPush(progressIo);
+  if (schedulePush && hydrated) scheduleProgressPush(progressIo);
 }
 
 /** Test helper — clears in-memory progress cache. */
-export function resetProgressStore(): void { memoryStore = null; }
+export function resetProgressStore(): void { memoryStore = null; hydrated = false; }
 
 export function getLastEssayId(): string | null {
   return readStore()?.lastEssayId ?? null;
@@ -96,6 +97,7 @@ export function getReadStats(totalEssays: number, wordsTotal: number): ReadStats
 
 export async function syncProgressFromServer(): Promise<void> {
   await syncProgress(progressIo);
+  hydrated = true;
 }
 
 export function attachScrollTracking(essayId: string, el: HTMLElement): () => void {

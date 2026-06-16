@@ -3,7 +3,14 @@
   import AppShell from '$lib/components/AppShell.svelte';
   import { initApp } from '$lib/app.svelte';
 
-  onMount(() => { void initApp(); });
+  let appReady = $state(false);
+
+  onMount(async () => {
+    await initApp();
+    appReady = true;
+  });
 </script>
 
-<AppShell />
+{#if appReady}
+  <AppShell />
+{/if}

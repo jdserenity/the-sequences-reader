@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReadingProgress } from './progress-types';
-import { fetchRemoteProgress, pushRemoteProgress, scheduleProgressPush, syncProgress } from './progress-sync';
+import { fetchRemoteProgress, flushProgressPush, pushRemoteProgress, scheduleProgressPush, syncProgress } from './progress-sync';
 
 const sample: ReadingProgress = {
   lastEssayId: 'essay-1',
@@ -61,8 +61,9 @@ describe('progress-sync', () => {
     expect(puts.length).toBe(1);
   });
 
-  it('debounces remote pushes', async () => {
+  it('debounces remote pushes into one flush', async () => {
     const fetchFn = mockFetch((url, init) => {
+      if (url === '/api/progress' && !init?.method) return new Response('null');
       if (init?.method === 'PUT') return new Response(JSON.stringify(sample));
       return new Response('null');
     });
@@ -70,7 +71,40 @@ describe('progress-sync', () => {
     scheduleProgressPush(io, fetchFn);
     scheduleProgressPush(io, fetchFn);
     await vi.advanceTimersByTimeAsync(500);
-    expect(fetchFn).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    const puts = fetchFn.mock.calls.filter(([, init]) => init?.method === 'PUT');
+    expect(puts.length).toBe(1);
+  });
+
+  it('merges with remote before push so scroll-only state cannot drop reads', async () => {
+    const local: ReadingProgress = {
+      lastEssayId: 'essay-1',
+      scrollByEssay: { 'essay-1': 99 },
+      readEssayIds: [],
+      updatedAt: 1,
+      scrollUpdatedAt: 9_000,
+    };
+    const remote: ReadingProgress = {
+      lastEssayId: 'essay-2',
+      scrollByEssay: {},
+      readEssayIds: ['preface', 'essay-2'],
+      updatedAt: 100,
+      scrollUpdatedAt: 100,
+    };
+    let putBody: ReadingProgress | null = null;
+    const fetchFn = mockFetch((url, init) => {
+      if (url === '/api/progress' && !init?.method) return new Response(JSON.stringify(remote));
+      if (init?.method === 'PUT') {
+        putBody = JSON.parse(String(init.body)) as ReadingProgress;
+        return new Response(JSON.stringify(putBody));
+      }
+      return new Response('null');
+    });
+    await flushProgressPush({ read: () => local, write: () => {} }, fetchFn);
+    expect(putBody?.readEssayIds).toContain('preface');
+    expect(putBody?.readEssayIds).toContain('essay-2');
+    expect(putBody?.scrollByEssay['essay-1']).toBe(99);
   });
 
   it('treats 503 as offline', async () => {

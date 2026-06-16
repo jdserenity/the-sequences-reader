@@ -33,7 +33,7 @@ Also per essay: **resume position** (scroll / reading position inside the essay)
 
 Read/completion state (`readEssayIds`) lives in D1 only; the client keeps an in-memory cache loaded on startup via `GET /api/progress`. Bibliography and glossary are reference-only: listed at end of TOC in a distinct color, excluded from essay/word totals and completion. TOC header: primary title “The Sequences”, secondary “Table of Contents”; stats line shows essays read, percent of countable total, and words read out of corpus word count (countable essays only; per-essay counts from cleaned markdown bodies at app load). Read essay links are tinted light green.
 
-D1 (`sequences-reader-progress`) holds a single progress row (`id = 1`) including scroll/resume fields. `GET/PUT /api/progress` on the Pages worker. Client loads D1 into memory on init; edits update memory and debounce to D1 (~500ms). **Merge rules on sync:** `readEssayIds` union both sides; scroll/resume fields last-write-wins on `scrollUpdatedAt`. Server PUT also merges before save. Without a D1 binding (plain `vite dev`), progress stays empty in memory until a remote is reachable.
+D1 (`sequences-reader-progress`) holds a single progress row (`id = 1`) including scroll/resume fields. `GET/PUT /api/progress` on the Pages worker. Client loads D1 into memory on init (UI mounts only after first sync); edits update memory and debounce to D1 (~500ms). PUT always re-fetches and merges with D1 first so scroll-only writes cannot clobber `readEssayIds`. **Merge rules:** `readEssayIds` union both sides; scroll/resume fields last-write-wins on `scrollUpdatedAt`. Server PUT also merges before save. Without a D1 binding (plain `vite dev`), progress stays empty in memory until a remote is reachable.
 
 ## Stack
 
