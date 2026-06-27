@@ -143,6 +143,7 @@ nav.essay-nav {
   text-align: center;
 }
 .prose a { color: var(--link); word-break: break-word; }
+.prose { user-select: text; -webkit-user-select: text; }
 .prose img, .prose table, .prose pre { max-width: 100%; }
 .prose .footnote-num { color: var(--link); font-weight: 600; margin-right: 0.15em; }
 .prose .footnotes-collapse { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }

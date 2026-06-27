@@ -31,7 +31,12 @@ export function getSelectionAnchor(root: HTMLElement): SelectionAnchor | null {
   const range = sel.getRangeAt(0);
   if (!root.contains(range.commonAncestorContainer)) return null;
   const rect = range.getBoundingClientRect();
-  if (!rect.width && !rect.height) return null;
+  if (!rect.width && !rect.height) {
+    const rects = range.getClientRects();
+    const r = rects[0];
+    if (!r) return null;
+    return { top: r.top, left: r.left + r.width / 2 };
+  }
   return { top: rect.top, left: rect.left + rect.width / 2 };
 }
 

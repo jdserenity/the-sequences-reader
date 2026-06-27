@@ -42,29 +42,33 @@
     scrollToHashInPanel(scrollEl, href);
   }
 
-  function paintHighlights(): void {
+  function renderProse(): void {
     if (!proseEl) return;
     proseEl.innerHTML = html;
     const marks = getHighlightsForEssay(essayId);
-    if (!marks.length) return;
-    applyHighlightMarks(proseEl, marks);
+    if (marks.length) applyHighlightMarks(proseEl, marks);
   }
 
-  function onProseMouseUp(): void {
+  function onProsePointerUp(): void {
     if (!proseEl) return;
-    const range = getRangeFromSelection(proseEl);
-    const anchor = getSelectionAnchor(proseEl);
-    if (!range || !anchor) { dismissHighlightToolbar(); return; }
-    pendingHighlight = range;
-    highlightToolbar = anchor;
+    requestAnimationFrame(() => {
+      if (!proseEl) return;
+      const range = getRangeFromSelection(proseEl);
+      const anchor = getSelectionAnchor(proseEl);
+      if (!range || !anchor) { dismissHighlightToolbar(); return; }
+      pendingHighlight = range;
+      highlightToolbar = anchor;
+    });
   }
 
-  function onConfirmHighlight(): void {
+  function onConfirmHighlight(e: MouseEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
     if (!pendingHighlight) return;
     if (!addHighlight(essayId, pendingHighlight)) { dismissHighlightToolbar(); return; }
     window.getSelection()?.removeAllRanges();
     dismissHighlightToolbar();
-    paintHighlights();
+    renderProse();
   }
 
   function onMarkReadAndNext(nextId: string): void {
@@ -93,7 +97,7 @@
     highlightState.epoch;
     const el = proseEl;
     if (!el) return;
-    queueMicrotask(() => paintHighlights());
+    queueMicrotask(() => renderProse());
   });
 </script>
 
@@ -112,17 +116,15 @@
     <div class="essay-progress-fill" style:transform="scaleX({scrollProgress})"></div>
   </div>
   {#if highlightToolbar && pendingHighlight}
-    <div class="highlight-toolbar" style:top="{highlightToolbar.top}px" style:left="{highlightToolbar.left}px">
-      <button type="button" onclick={onConfirmHighlight}>Highlight</button>
+    <div class="highlight-toolbar" style:top="{highlightToolbar.top}px" style:left="{highlightToolbar.left}px" role="toolbar" aria-label="Text selection">
+      <button type="button" onmousedown={(e) => e.preventDefault()} onclick={onConfirmHighlight}>Highlight</button>
     </div>
   {/if}
   <div class="panel-scroll read-panel" bind:this={scrollEl}>
     {#if meta}
       <main>
         <h1 class="essay-title">{meta.title}</h1>
-        <article class="prose" bind:this={proseEl} onclickcapture={onProseClick} onmouseup={onProseMouseUp}>
-          {@html html}
-        </article>
+        <article class="prose" bind:this={proseEl} onclickcapture={onProseClick} onpointerup={onProsePointerUp}></article>
         <nav class="essay-nav" aria-label="Essay navigation">
           <div class="essay-nav-icons">
             {#if meta.prevId}
