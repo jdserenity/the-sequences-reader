@@ -1,7 +1,8 @@
+import { corpus } from './corpus';
 import { getEssayWordCount, isReferenceEssay } from './corpus';
-import type { ReadingProgress, ReadStats } from './progress-types';
+import type { EssayHighlight, ReadingProgress, ReadStats } from './progress-types';
 import { scheduleProgressPush, syncProgress } from './progress-sync';
-import { bumpReadEpoch } from './progress.svelte';
+import { bumpHighlightEpoch, bumpReadEpoch } from './progress.svelte';
 
 let memoryStore: ReadingProgress | null = null;
 let hydrated = false;
@@ -42,6 +43,7 @@ export function saveScroll(essayId: string, scrollY: number): void {
     lastEssayId: essayId,
     scrollByEssay,
     readEssayIds: prev?.readEssayIds ?? [],
+    highlights: prev?.highlights ?? [],
     updatedAt: prev?.updatedAt ?? now,
     scrollUpdatedAt: now,
   });
@@ -72,6 +74,7 @@ export function markEssaysRead(essayIds: string[]): void {
     lastEssayId: prev?.lastEssayId ?? countable[countable.length - 1],
     scrollByEssay: prev?.scrollByEssay ?? {},
     readEssayIds,
+    highlights: prev?.highlights ?? [],
     updatedAt: Date.now(),
     scrollUpdatedAt: prev?.scrollUpdatedAt ?? prev?.updatedAt ?? Date.now(),
   });
@@ -93,6 +96,47 @@ export function getReadStats(totalEssays: number, wordsTotal: number): ReadStats
   const percent = total > 0 ? (read / total) * 100 : 0;
   const wordsRead = getReadWordCount(readEssayIds);
   return { read, total, percent, wordsRead, wordsTotal };
+}
+
+export function isBookRead(bookId: string): boolean {
+  const book = corpus.books.find((b) => b.id === bookId);
+  if (!book) return false;
+  for (const seq of book.sequences) {
+    for (const essay of seq.essays) {
+      if (!isEssayRead(essay.id)) return false;
+    }
+  }
+  return true;
+}
+
+export function getHighlightsForEssay(essayId: string): EssayHighlight[] {
+  return (readStore()?.highlights ?? []).filter((h) => h.essayId === essayId);
+}
+
+export function addHighlight(essayId: string, range: { start: number; end: number; text: string }): EssayHighlight | null {
+  const prev = readStore();
+  const existing = prev?.highlights ?? [];
+  const overlap = existing.some((h) => h.essayId === essayId && h.start < range.end && h.end > range.start);
+  if (overlap) return null;
+  const highlight: EssayHighlight = {
+    id: crypto.randomUUID(),
+    essayId,
+    start: range.start,
+    end: range.end,
+    text: range.text,
+    color: 'yellow',
+    createdAt: Date.now(),
+  };
+  writeStore({
+    lastEssayId: prev?.lastEssayId ?? essayId,
+    scrollByEssay: prev?.scrollByEssay ?? {},
+    readEssayIds: prev?.readEssayIds ?? [],
+    highlights: [...existing, highlight],
+    updatedAt: Date.now(),
+    scrollUpdatedAt: prev?.scrollUpdatedAt ?? prev?.updatedAt ?? Date.now(),
+  });
+  bumpHighlightEpoch();
+  return highlight;
 }
 
 export async function syncProgressFromServer(): Promise<void> {

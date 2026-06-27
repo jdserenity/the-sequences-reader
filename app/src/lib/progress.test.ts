@@ -1,12 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { corpus } from './corpus';
 import { corpusWordCount, countableEssayCount } from './corpus';
 import { readState } from './progress.svelte';
 import {
+  addHighlight,
+  getHighlightsForEssay,
   getLastEssayId,
   getReadStats,
   getReadWordCount,
   getResumePath,
   getScroll,
+  isBookRead,
   isEssayRead,
   markEssayRead,
   markEssaysRead,
@@ -94,5 +98,21 @@ describe('progress', () => {
     markEssayRead('essay-1');
     resetProgressStore();
     expect(isEssayRead('essay-1')).toBe(false);
+  });
+
+  it('marks a book read only when every essay in it is read', () => {
+    const book = corpus.books[0];
+    expect(isBookRead(book.id)).toBe(false);
+    for (const seq of book.sequences) {
+      for (const essay of seq.essays) markEssayRead(essay.id);
+    }
+    expect(isBookRead(book.id)).toBe(true);
+  });
+
+  it('stores highlights per essay', () => {
+    const saved = addHighlight('essay-1', { start: 1, end: 4, text: 'foo' });
+    expect(saved?.color).toBe('yellow');
+    expect(getHighlightsForEssay('essay-1')).toHaveLength(1);
+    expect(addHighlight('essay-1', { start: 2, end: 5, text: 'overlap' })).toBeNull();
   });
 });
