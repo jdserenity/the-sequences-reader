@@ -171,7 +171,7 @@ nav.essay-nav {
 .prose h1 { font-size: 1.75rem; line-height: 1.25; margin-top: 0; }
 .prose h2 { font-size: 1.35rem; margin-top: 2rem; }
 .prose p { margin: 1rem 0; }
-.prose span.highlight { background: none; color: #c4b86a; padding: 0; margin: 0; border: none; border-radius: 0; font: inherit; }
+.prose span.highlight { background: none; color: #dcc878; padding: 0; margin: 0; border: none; border-radius: 0; font: inherit; }
 .highlight-toolbar {
   position: fixed;
   z-index: 20;
