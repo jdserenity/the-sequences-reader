@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFootnoteMap, cleanEssayMarkdown, injectFootnoteAnchors, parseRefDefs, resolveReferenceLinks, sortFootnoteSection, stripEssayFooter, stripTrailingNavLinks, wrapFootnotesCollapsible } from './markdown';
+import { buildFootnoteMap, cleanEssayMarkdown, injectFootnoteAnchors, parseRefDefs, resolveReferenceLinks, sortFootnoteSection, stripEssayFooter, stripGreaterWrongCommentLinks, stripTrailingNavLinks, wrapFootnotesCollapsible } from './markdown';
 
 describe('cleanEssayMarkdown', () => {
   it('strips nav before ❦ marker', () => {
@@ -59,6 +59,18 @@ describe('cleanEssayMarkdown', () => {
   it('strips resolved next-essay nav link at the end', () => {
     const body = 'Essay ends here.\n\n[Rationalization](https://www.readthesequences.com/Rationalization)';
     expect(stripTrailingNavLinks(body)).toBe('Essay ends here.');
+  });
+
+  it('strips greater wrong comment thread link above footnotes', () => {
+    const body = 'Essay ends here.\n\n[ ](https://www.greaterwrong.com/lw/x/#comments)\n\n<details>footnotes</details>';
+    expect(stripGreaterWrongCommentLinks(body)).toBe('Essay ends here.\n\n<details>footnotes</details>');
+  });
+
+  it('removes greater wrong comment link from cleaned essays with footnotes', () => {
+    const raw = `# Title\n\n❦\n\nEssay body.\n\n[ ][20]\n\nNote. [↩][24]\n\n[Top][7]\n\n [20]: https://www.greaterwrong.com/lw/x/#comments\n [24]: #citation1`;
+    const out = cleanEssayMarkdown(raw);
+    expect(out).not.toContain('greaterwrong.com');
+    expect(out).toContain('footnotes-collapse');
   });
 
   it('resolves reference links to markdown URLs', () => {

@@ -139,6 +139,17 @@ export function stripTrailingNavLinks(body: string): string {
   return lines.join('\n').trim();
 }
 
+/** Remove empty Greater Wrong comment-thread links exported above footnotes. */
+export function stripGreaterWrongCommentLinks(body: string): string {
+  return body.split('\n').filter((line) => !TRAILING_COMMENT_NAV_RE.test(line.trim())).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const PMWIKI_COMMENT_LINE_RE = /^\[\s*\]\[\d+\]\s*$/;
+
+function stripPmWikiCommentThreadLines(body: string): string {
+  return body.split('\n').filter((line) => !PMWIKI_COMMENT_LINE_RE.test(line.trim())).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 /** Drop PmWiki markdown export nav boilerplate; wire footnote/citation anchors; strip site footer. */
 export function cleanEssayMarkdown(raw: string): string {
   const i = raw.indexOf(BODY_MARK);
@@ -147,8 +158,8 @@ export function cleanEssayMarkdown(raw: string): string {
   const sorted = sortFootnoteSection(body, refs);
   const footnoteMap = buildFootnoteMap(sorted, refs);
   const anchored = injectFootnoteAnchors(sorted, refs, footnoteMap);
-  const trimmed = stripEssayFooter(anchored);
+  const trimmed = stripPmWikiCommentThreadLines(stripEssayFooter(anchored));
   const linked = resolveReferenceLinks(trimmed, refs);
-  const navStripped = stripTrailingNavLinks(linked);
+  const navStripped = stripTrailingNavLinks(stripGreaterWrongCommentLinks(linked));
   return wrapFootnotesCollapsible(navStripped);
 }
