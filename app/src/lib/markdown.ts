@@ -97,8 +97,17 @@ export function injectFootnoteAnchors(body: string, defs: RefDefs, footnoteMap: 
 }
 
 const FOOTER_START_RE = /\n\[(?:Top|Preface|Book\b|Sequence\]\[)/;
-const FOOTER_SEQUENCE_RE = /\n\[[^\]]*\(sequence\)/i;
+const FOOTER_SEQUENCE_RE = /\n\[[\s\S]*?\(sequence\)\]\[\d+\]/i;
 const FOOTER_BOOK_PIPE_RE = /\n\[[^\]]*\| Rationality/;
+const FOOTER_STAR_RE = /\n\[!\[\]/;
+const FOOTER_COMMENT_RE = /\n\[\s*\]\[\d+\]/;
+const FOOTER_SITE_NAV_RE = /\n\[Home\]\[\d+\]\[About\]/;
+const FOOTER_REDIRECT_RE = /\n\(::?redirect /i;
+
+function isTrailingFooterLine(line: string): boolean {
+  const t = line.trim();
+  return /^\[[^\]]+\]\[\d+\]$/.test(t) || /^\[\s*\]\[\d+\]$/.test(t) || /^\[!\[\]/.test(t);
+}
 
 export function wrapFootnotesCollapsible(body: string): string {
   const lines = body.split('\n');
@@ -113,13 +122,13 @@ export function wrapFootnotesCollapsible(body: string): string {
 
 export function stripEssayFooter(body: string): string {
   let end = body.length;
-  for (const re of [FOOTER_START_RE, FOOTER_SEQUENCE_RE, FOOTER_BOOK_PIPE_RE]) {
+  for (const re of [FOOTER_START_RE, FOOTER_SEQUENCE_RE, FOOTER_BOOK_PIPE_RE, FOOTER_STAR_RE, FOOTER_COMMENT_RE, FOOTER_SITE_NAV_RE, FOOTER_REDIRECT_RE]) {
     const m = re.exec(body);
     if (m && m.index < end) end = m.index;
   }
   let text = body.slice(0, end).trim();
   const lines = text.split('\n');
-  while (lines.length && /^\[[^\]]+\]\[\d+\]\s*$/.test(lines[lines.length - 1].trim())) lines.pop();
+  while (lines.length && isTrailingFooterLine(lines[lines.length - 1])) lines.pop();
   return lines.join('\n').trim();
 }
 
@@ -131,7 +140,7 @@ export function cleanEssayMarkdown(raw: string): string {
   const sorted = sortFootnoteSection(body, refs);
   const footnoteMap = buildFootnoteMap(sorted, refs);
   const anchored = injectFootnoteAnchors(sorted, refs, footnoteMap);
-  const linked = resolveReferenceLinks(anchored, refs);
-  const trimmed = stripEssayFooter(linked);
-  return wrapFootnotesCollapsible(trimmed);
+  const trimmed = stripEssayFooter(anchored);
+  const linked = resolveReferenceLinks(trimmed, refs);
+  return wrapFootnotesCollapsible(linked);
 }

@@ -43,6 +43,21 @@ describe('cleanEssayMarkdown', () => {
     expect(stripEssayFooter(body)).toBe('Essay ends here.');
   });
 
+  it('strips prev/next essay and comment links before Top', () => {
+    const body = 'Essay ends here.\n\n[ ][12]\n\n[Rationalization][13]\n\n[Top][7]\n\n[Book][14]';
+    expect(stripEssayFooter(body)).toBe('Essay ends here.');
+  });
+
+  it('strips multiline sequence footer before Top', () => {
+    const body = 'Essay ends here.\n\n[Predictably Wrong\n(sequence)][27]\n\n[Top][7]';
+    expect(stripEssayFooter(body)).toBe('Essay ends here.');
+  });
+
+  it('strips star image footer links', () => {
+    const body = 'Essay ends here.\n\n[![][https://www.readthesequences.com/wiki/uploads/star.svg]][18]\n\n[Next][13]';
+    expect(stripEssayFooter(body)).toBe('Essay ends here.');
+  });
+
   it('resolves reference links to markdown URLs', () => {
     const defs = parseRefDefs('[28]: https://example.com/ob\n [29]: https://example.com/lw');
     const out = resolveReferenceLinks('blogs *[Overcoming Bias][28]* and *[Less Wrong][29]*.', defs);
@@ -62,5 +77,10 @@ describe('cleanEssayMarkdown', () => {
   it('resolves body links from pmwiki reference block', () => {
     const raw = `# Title\n\n❦\n\nSee *[Less Wrong][29]*.\n\n [29]: https://www.greaterwrong.com/`;
     expect(cleanEssayMarkdown(raw)).toBe('See *[Less Wrong](https://www.greaterwrong.com/)*.');
+  });
+
+  it('removes site nav footer from a real essay export', () => {
+    const raw = `# Title\n\n❦\n\nEssay body.\n\n[Rationalization][13]\n\n[Top][7]\n\n[Book][14]\n\n [13]: https://www.readthesequences.com/Rationalization\n [7]: https://www.readthesequences.com/Contents`;
+    expect(cleanEssayMarkdown(raw)).toBe('Essay body.');
   });
 });
