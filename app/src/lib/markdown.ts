@@ -99,15 +99,11 @@ export function injectFootnoteAnchors(body: string, defs: RefDefs, footnoteMap: 
 const FOOTER_START_RE = /\n\[(?:Top|Preface|Book\b|Sequence\]\[)/;
 const FOOTER_SEQUENCE_RE = /\n\[[\s\S]*?\(sequence\)\]\[\d+\]/i;
 const FOOTER_BOOK_PIPE_RE = /\n\[[^\]]*\| Rationality/;
-const FOOTER_STAR_RE = /\n\[!\[\]/;
-const FOOTER_COMMENT_RE = /\n\[\s*\]\[\d+\]/;
 const FOOTER_SITE_NAV_RE = /\n\[Home\]\[\d+\]\[About\]/;
 const FOOTER_REDIRECT_RE = /\n\(::?redirect /i;
-
-function isTrailingFooterLine(line: string): boolean {
-  const t = line.trim();
-  return /^\[[^\]]+\]\[\d+\]$/.test(t) || /^\[\s*\]\[\d+\]$/.test(t) || /^\[!\[\]/.test(t);
-}
+const TRAILING_RTS_NAV_RE = /^\[[^\]]+\]\(https:\/\/www\.readthesequences\.com\/[^)]+\)\s*$/;
+const TRAILING_COMMENT_NAV_RE = /^\[\s*\]\(https:\/\/www\.greaterwrong\.com\/[^)]+\)\s*$/;
+const TRAILING_STAR_NAV_RE = /^\[!\[\]/;
 
 export function wrapFootnotesCollapsible(body: string): string {
   const lines = body.split('\n');
@@ -122,13 +118,24 @@ export function wrapFootnotesCollapsible(body: string): string {
 
 export function stripEssayFooter(body: string): string {
   let end = body.length;
-  for (const re of [FOOTER_START_RE, FOOTER_SEQUENCE_RE, FOOTER_BOOK_PIPE_RE, FOOTER_STAR_RE, FOOTER_COMMENT_RE, FOOTER_SITE_NAV_RE, FOOTER_REDIRECT_RE]) {
+  for (const re of [FOOTER_START_RE, FOOTER_SEQUENCE_RE, FOOTER_BOOK_PIPE_RE, FOOTER_SITE_NAV_RE, FOOTER_REDIRECT_RE]) {
     const m = re.exec(body);
     if (m && m.index < end) end = m.index;
   }
   let text = body.slice(0, end).trim();
   const lines = text.split('\n');
-  while (lines.length && isTrailingFooterLine(lines[lines.length - 1])) lines.pop();
+  while (lines.length && /^\[[^\]]+\]\[\d+\]\s*$/.test(lines[lines.length - 1].trim())) lines.pop();
+  return lines.join('\n').trim();
+}
+
+/** Drop resolved PmWiki next/prev nav lines left at the end after link resolution. */
+export function stripTrailingNavLinks(body: string): string {
+  const lines = body.split('\n');
+  while (lines.length) {
+    const t = lines[lines.length - 1].trim();
+    if (TRAILING_RTS_NAV_RE.test(t) || TRAILING_COMMENT_NAV_RE.test(t) || TRAILING_STAR_NAV_RE.test(t)) lines.pop();
+    else break;
+  }
   return lines.join('\n').trim();
 }
 
@@ -142,5 +149,6 @@ export function cleanEssayMarkdown(raw: string): string {
   const anchored = injectFootnoteAnchors(sorted, refs, footnoteMap);
   const trimmed = stripEssayFooter(anchored);
   const linked = resolveReferenceLinks(trimmed, refs);
-  return wrapFootnotesCollapsible(linked);
+  const navStripped = stripTrailingNavLinks(linked);
+  return wrapFootnotesCollapsible(navStripped);
 }
