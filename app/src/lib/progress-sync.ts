@@ -1,7 +1,7 @@
 import { mergeProgress, shouldPushAfterSync } from './progress-merge';
 import type { ReadingProgress } from './progress-types';
 import { normalizeProgress } from './progress-types';
-import { bumpReadEpoch } from './progress.svelte';
+import { bumpHighlightEpoch, bumpReadEpoch } from './progress.svelte';
 
 const API = '/api/progress';
 const PUSH_DEBOUNCE_MS = 500;
@@ -79,8 +79,10 @@ export async function flushProgressPush(io: ProgressIO, fetchFn: typeof fetch = 
   if (!shouldPushAfterSync(remote, progress)) return;
   const saved = await pushRemoteProgress(progress, fetchFn);
   if (saved && localChanged(progress, saved)) {
-    io.write(saved);
-    bumpReadEpoch();
+    const merged = mergeProgress(progress, saved).progress ?? saved;
+    io.write(merged);
+    if ((progress.highlights ?? []).length !== (merged.highlights ?? []).length) bumpHighlightEpoch();
+    else bumpReadEpoch();
   }
 }
 

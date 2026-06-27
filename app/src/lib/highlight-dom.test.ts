@@ -32,6 +32,24 @@ describe('highlight-dom', () => {
     expect(getOffsetInRoot(root, strongText, 1)).toBe(3);
   });
 
+  it('applies a saved range after prose html is reset', () => {
+    const root = document.createElement('article');
+    root.innerHTML = '<p>Hello world</p><p>Second paragraph</p>';
+    const range = document.createRange();
+    const text = root.querySelector('p')!.firstChild!;
+    range.setStart(text, 0);
+    range.setEnd(text, 5);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const saved = getRangeFromSelection(root);
+    expect(saved).toEqual({ start: 0, end: 5, text: 'Hello' });
+    root.innerHTML = '<p>Hello world</p><p>Second paragraph</p>';
+    applyHighlightMarks(root, [{ id: 'h1', start: saved!.start, end: saved!.end }]);
+    expect(root.querySelector('mark.highlight')?.textContent).toBe('Hello');
+    sel.removeAllRanges();
+  });
+
   it('returns anchor position for a non-collapsed selection', () => {
     const root = document.createElement('article');
     root.innerHTML = '<p>Hello world</p>';

@@ -2,14 +2,11 @@ export type TextRange = { start: number; end: number; text: string };
 export type SelectionAnchor = { top: number; left: number };
 
 export function getOffsetInRoot(root: HTMLElement, node: Node, offset: number): number {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let pos = 0;
-  let current: Node | null;
-  while ((current = walker.nextNode())) {
-    if (current === node) return pos + offset;
-    pos += (current.textContent ?? '').length;
-  }
-  return pos;
+  const doc = root.ownerDocument;
+  const range = doc.createRange();
+  range.setStart(root, 0);
+  range.setEnd(node, offset);
+  return range.toString().length;
 }
 
 export function getRangeFromSelection(root: HTMLElement): TextRange | null {

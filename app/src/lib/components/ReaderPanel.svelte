@@ -75,11 +75,12 @@
   function onConfirmHighlight(e: MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
-    if (!highlightToolbar || highlightToolbar.mode !== 'add') return;
-    if (!addHighlight(essayId, highlightToolbar.range)) { dismissHighlightToolbar(); return; }
+    if (!highlightToolbar || highlightToolbar.mode !== 'add' || !proseEl) return;
+    const saved = addHighlight(essayId, highlightToolbar.range);
+    if (!saved) { dismissHighlightToolbar(); return; }
     window.getSelection()?.removeAllRanges();
     dismissHighlightToolbar();
-    renderProse();
+    applyHighlightMarks(proseEl, [{ id: saved.id, start: saved.start, end: saved.end }]);
   }
 
   function onRemoveHighlight(e: MouseEvent): void {
