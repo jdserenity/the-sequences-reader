@@ -2,7 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import { corpusWordCount, countableEssayCount, tocFrontMatter, tocReference } from '$lib/corpus';
   import { showRead, tocUi } from '$lib/app.svelte';
-  import { getReadStats, isEssayRead } from '$lib/progress';
+  import { getReadStats, isBookRead, isEssayRead } from '$lib/progress';
   import { readState } from '$lib/progress.svelte';
   import {
     delay,
@@ -13,7 +13,7 @@
     TOC_FIRST_SPLIT_MS,
     TOC_VIGNETTE_OUT_MS,
   } from '$lib/tocAnim';
-  import { tocBookSections, type TocSectionKey } from '$lib/tocSections';
+  import { tocBookSections, parseSectionKey, type TocSectionKey } from '$lib/tocSections';
   import { canOpenSection, hasOpenTocTiles, isAtSectionLimit, MAX_DETAIL_TILES_DESKTOP, toggleOpenSection } from '$lib/tocTiles';
   import { formatWordCountProgress } from '$lib/wordCount';
   import TocSectionDetail from './TocSectionDetail.svelte';
@@ -147,10 +147,12 @@
             {#each tocBookSections as section (section.key)}
               {@const open = openSections.includes(section.key)}
               {@const blocked = atLimit && !open}
+              {@const bookId = parseSectionKey(section.key).bookId}
               <button
                 type="button"
                 class="toc-section-btn"
                 class:open
+                class:read={readState.epoch >= 0 && isBookRead(bookId)}
                 class:blocked
                 disabled={blocked || animating}
                 aria-disabled={blocked || animating}

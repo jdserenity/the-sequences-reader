@@ -1,4 +1,4 @@
-import type { ReadingProgress } from './progress-types';
+import type { EssayHighlight, ReadingProgress } from './progress-types';
 import { normalizeProgress } from './progress-types';
 
 export type MergeSource = 'none' | 'local' | 'remote' | 'merged';
@@ -9,6 +9,12 @@ function scrollAt(p: ReadingProgress): number { return p.scrollUpdatedAt ?? p.up
 
 function unionReadIds(a: string[], b: string[]): string[] {
   return [...new Set([...a, ...b])];
+}
+
+function unionHighlights(a: EssayHighlight[], b: EssayHighlight[]): EssayHighlight[] {
+  const map = new Map<string, EssayHighlight>();
+  for (const h of [...a, ...b]) map.set(h.id, h);
+  return [...map.values()].sort((x, y) => x.start - y.start || x.createdAt - y.createdAt);
 }
 
 /** Union read sets; scroll positions last-write-wins on scrollUpdatedAt. */
@@ -24,6 +30,7 @@ export function mergeProgress(local: ReadingProgress | null, remote: ReadingProg
       lastEssayId: scrollFromLocal ? l.lastEssayId : r.lastEssayId,
       scrollByEssay: scrollFromLocal ? { ...r.scrollByEssay, ...l.scrollByEssay } : { ...l.scrollByEssay, ...r.scrollByEssay },
       readEssayIds: unionReadIds(l.readEssayIds, r.readEssayIds),
+      highlights: unionHighlights(l.highlights ?? [], r.highlights ?? []),
       updatedAt: Math.max(l.updatedAt, r.updatedAt),
       scrollUpdatedAt: Math.max(scrollAt(l), scrollAt(r)),
     },
@@ -38,6 +45,9 @@ export function shouldPushAfterSync(remote: ReadingProgress | null, merged: Read
   if (m.readEssayIds.length !== r.readEssayIds.length) return true;
   const readSet = new Set(r.readEssayIds);
   if (m.readEssayIds.some((id) => !readSet.has(id))) return true;
+  if ((m.highlights ?? []).length !== (r.highlights ?? []).length) return true;
+  const highlightIds = new Set((r.highlights ?? []).map((h) => h.id));
+  if ((m.highlights ?? []).some((h) => !highlightIds.has(h.id))) return true;
   if (m.scrollUpdatedAt > scrollAt(r)) return true;
   if (m.updatedAt > r.updatedAt) return true;
   return JSON.stringify(m.scrollByEssay) !== JSON.stringify(r.scrollByEssay);

@@ -1,0 +1,1 @@
+ALTER TABLE progress ADD COLUMN highlights TEXT NOT NULL DEFAULT '[]';

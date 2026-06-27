@@ -11,12 +11,13 @@ payload.updatedAt = Date.now();
 payload.scrollUpdatedAt = payload.updatedAt;
 const scroll = JSON.stringify(payload.scrollByEssay).replace(/'/g, "''");
 const reads = JSON.stringify(payload.readEssayIds).replace(/'/g, "''");
-const sql = `INSERT INTO progress (id, last_essay_id, scroll_by_essay, read_essay_ids, updated_at, scroll_updated_at)
-VALUES (1, '${payload.lastEssayId}', '${scroll}', '${reads}', ${payload.updatedAt}, ${payload.scrollUpdatedAt})
+const sql = `INSERT INTO progress (id, last_essay_id, scroll_by_essay, read_essay_ids, highlights, updated_at, scroll_updated_at)
+VALUES (1, '${payload.lastEssayId}', '${scroll}', '${reads}', '[]', ${payload.updatedAt}, ${payload.scrollUpdatedAt})
 ON CONFLICT(id) DO UPDATE SET
   last_essay_id = excluded.last_essay_id,
   scroll_by_essay = excluded.scroll_by_essay,
   read_essay_ids = excluded.read_essay_ids,
+  highlights = excluded.highlights,
   updated_at = excluded.updated_at,
   scroll_updated_at = excluded.scroll_updated_at;
 `;

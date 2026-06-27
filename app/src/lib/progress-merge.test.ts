@@ -6,6 +6,7 @@ const local: ReadingProgress = {
   lastEssayId: 'essay-a',
   scrollByEssay: { 'essay-a': 10 },
   readEssayIds: ['essay-a'],
+  highlights: [],
   updatedAt: 100,
   scrollUpdatedAt: 500,
 };
@@ -14,6 +15,7 @@ const remote: ReadingProgress = {
   lastEssayId: 'essay-b',
   scrollByEssay: { 'essay-b': 20 },
   readEssayIds: ['essay-b', 'essay-c'],
+  highlights: [],
   updatedAt: 200,
   scrollUpdatedAt: 100,
 };
@@ -58,6 +60,13 @@ describe('mergeProgress', () => {
     const merged = mergeProgress(demoLocal, seededRemote).progress!;
     expect(merged.readEssayIds).toContain('preface');
     expect(merged.readEssayIds).toContain('essay-b');
+  });
+
+  it('unions highlights from both sides', () => {
+    const hl = { id: 'h1', essayId: 'essay-a', start: 0, end: 5, text: 'hello', color: 'yellow' as const, createdAt: 1 };
+    const hl2 = { id: 'h2', essayId: 'essay-b', start: 0, end: 3, text: 'bye', color: 'yellow' as const, createdAt: 2 };
+    const merged = mergeProgress({ ...local, highlights: [hl] }, { ...remote, highlights: [hl2] }).progress!;
+    expect(merged.highlights.map((h) => h.id).sort()).toEqual(['h1', 'h2']);
   });
 });
 

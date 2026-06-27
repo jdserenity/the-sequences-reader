@@ -26,7 +26,8 @@ function localChanged(a: ReadingProgress | null, b: ReadingProgress): boolean {
     || a.lastEssayId !== b.lastEssayId
     || a.updatedAt !== b.updatedAt
     || (a.scrollUpdatedAt ?? a.updatedAt) !== (b.scrollUpdatedAt ?? b.updatedAt)
-    || JSON.stringify(a.scrollByEssay) !== JSON.stringify(b.scrollByEssay);
+    || JSON.stringify(a.scrollByEssay) !== JSON.stringify(b.scrollByEssay)
+    || JSON.stringify(a.highlights ?? []) !== JSON.stringify(b.highlights ?? []);
 }
 
 export async function fetchRemoteProgress(fetchFn: typeof fetch = fetch): Promise<ReadingProgress | null> {

@@ -1,7 +1,18 @@
+export type EssayHighlight = {
+  id: string;
+  essayId: string;
+  start: number;
+  end: number;
+  text: string;
+  color: 'yellow';
+  createdAt: number;
+};
+
 export type ReadingProgress = {
   lastEssayId: string;
   scrollByEssay: Record<string, number>;
   readEssayIds: string[];
+  highlights: EssayHighlight[];
   /** Bumped when readEssayIds change. */
   updatedAt: number;
   /** Bumped on scroll/resume changes only. */
@@ -12,5 +23,5 @@ export type ReadStats = { read: number; total: number; percent: number; wordsRea
 
 export function normalizeProgress(p: ReadingProgress): ReadingProgress {
   const scrollUpdatedAt = p.scrollUpdatedAt ?? p.updatedAt;
-  return { ...p, scrollUpdatedAt };
+  return { ...p, highlights: p.highlights ?? [], scrollUpdatedAt };
 }

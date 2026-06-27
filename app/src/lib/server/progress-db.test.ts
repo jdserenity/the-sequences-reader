@@ -7,6 +7,7 @@ const sample: ReadingProgress = {
   lastEssayId: 'essay-1',
   scrollByEssay: { 'essay-1': 40 },
   readEssayIds: ['essay-1', 'essay-2'],
+  highlights: [],
   updatedAt: 500,
   scrollUpdatedAt: 600,
 };
@@ -19,6 +20,7 @@ function mockDb(row: ReturnType<typeof parseProgressRow> | null = null) {
         last_essay_id: stored.lastEssayId,
         scroll_by_essay: JSON.stringify(stored.scrollByEssay),
         read_essay_ids: JSON.stringify(stored.readEssayIds),
+        highlights: JSON.stringify(stored.highlights ?? []),
         updated_at: stored.updatedAt,
         scroll_updated_at: stored.scrollUpdatedAt,
       } : null,
@@ -29,8 +31,9 @@ function mockDb(row: ReturnType<typeof parseProgressRow> | null = null) {
               lastEssayId: args[0] as string,
               scrollByEssay: JSON.parse(args[1] as string),
               readEssayIds: JSON.parse(args[2] as string),
-              updatedAt: args[3] as number,
-              scrollUpdatedAt: args[4] as number,
+              highlights: JSON.parse(args[3] as string),
+              updatedAt: args[4] as number,
+              scrollUpdatedAt: args[5] as number,
             };
           }
         },
@@ -46,6 +49,7 @@ describe('progress-db', () => {
       last_essay_id: 'essay-1',
       scroll_by_essay: '{"essay-1":1}',
       read_essay_ids: '["essay-1"]',
+      highlights: '[]',
       updated_at: 1,
       scroll_updated_at: 2,
     };
@@ -65,6 +69,7 @@ describe('progress-db', () => {
       lastEssayId: 'essay-9',
       scrollByEssay: { 'essay-9': 1 },
       readEssayIds: ['essay-9'],
+      highlights: [],
       updatedAt: 100,
       scrollUpdatedAt: 900,
     };

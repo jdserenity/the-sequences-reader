@@ -6,6 +6,7 @@ const sample: ReadingProgress = {
   lastEssayId: 'essay-1',
   scrollByEssay: { 'essay-1': 12 },
   readEssayIds: ['essay-1', 'essay-2'],
+  highlights: [],
   updatedAt: 100,
   scrollUpdatedAt: 100,
 };
@@ -26,6 +27,7 @@ describe('progress-sync', () => {
       lastEssayId: 'essay-1',
       scrollByEssay: { 'essay-1': 99 },
       readEssayIds: ['biases-an-introduction'],
+      highlights: [],
       updatedAt: 500,
       scrollUpdatedAt: 9_000,
     };
@@ -33,6 +35,7 @@ describe('progress-sync', () => {
       lastEssayId: 'doublethink-choosing-to-be-biased',
       scrollByEssay: {},
       readEssayIds: ['preface', 'biases-an-introduction', 'essay-2'],
+      highlights: [],
       updatedAt: 100,
       scrollUpdatedAt: 100,
     };
@@ -82,6 +85,7 @@ describe('progress-sync', () => {
       lastEssayId: 'essay-1',
       scrollByEssay: { 'essay-1': 99 },
       readEssayIds: [],
+      highlights: [],
       updatedAt: 1,
       scrollUpdatedAt: 9_000,
     };
@@ -89,6 +93,7 @@ describe('progress-sync', () => {
       lastEssayId: 'essay-2',
       scrollByEssay: {},
       readEssayIds: ['preface', 'essay-2'],
+      highlights: [],
       updatedAt: 100,
       scrollUpdatedAt: 100,
     };
