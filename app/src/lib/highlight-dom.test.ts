@@ -20,8 +20,9 @@ describe('highlight-dom', () => {
   it('wraps a text range in mark elements', () => {
     const root = document.createElement('article');
     root.innerHTML = '<p>Hello world</p>';
-    applyHighlightMarks(root, [{ start: 6, end: 11 }]);
+    applyHighlightMarks(root, [{ id: 'h1', start: 6, end: 11 }]);
     expect(root.querySelector('mark.highlight')?.textContent).toBe('world');
+    expect(root.querySelector('mark.highlight')?.dataset.highlightId).toBe('h1');
   });
 
   it('computes offsets for nested text nodes', () => {

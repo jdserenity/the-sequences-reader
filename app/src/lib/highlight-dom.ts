@@ -40,7 +40,7 @@ export function getSelectionAnchor(root: HTMLElement): SelectionAnchor | null {
   return { top: rect.top, left: rect.left + rect.width / 2 };
 }
 
-export function wrapTextOffset(root: HTMLElement, start: number, end: number): void {
+export function wrapTextOffset(root: HTMLElement, start: number, end: number, id?: string): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let pos = 0;
   const segments: { node: Text; start: number; end: number }[] = [];
@@ -59,6 +59,7 @@ export function wrapTextOffset(root: HTMLElement, start: number, end: number): v
     if (s === 0 && e === node.length) {
       const mark = document.createElement('mark');
       mark.className = 'highlight';
+      if (id) mark.dataset.highlightId = id;
       node.parentNode?.replaceChild(mark, node);
       mark.appendChild(node);
     } else {
@@ -66,6 +67,7 @@ export function wrapTextOffset(root: HTMLElement, start: number, end: number): v
       const middle = s === 0 ? node : node.splitText(s);
       const mark = document.createElement('mark');
       mark.className = 'highlight';
+      if (id) mark.dataset.highlightId = id;
       middle.parentNode?.replaceChild(mark, middle);
       mark.appendChild(middle);
       void after;
@@ -73,7 +75,7 @@ export function wrapTextOffset(root: HTMLElement, start: number, end: number): v
   }
 }
 
-export function applyHighlightMarks(root: HTMLElement, ranges: { start: number; end: number }[]): void {
+export function applyHighlightMarks(root: HTMLElement, ranges: { id: string; start: number; end: number }[]): void {
   const sorted = [...ranges].sort((a, b) => b.start - a.start);
-  for (const range of sorted) wrapTextOffset(root, range.start, range.end);
+  for (const range of sorted) wrapTextOffset(root, range.start, range.end, range.id);
 }

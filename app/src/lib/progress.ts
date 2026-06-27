@@ -139,6 +139,23 @@ export function addHighlight(essayId: string, range: { start: number; end: numbe
   return highlight;
 }
 
+export function removeHighlight(highlightId: string): boolean {
+  const prev = readStore();
+  const existing = prev?.highlights ?? [];
+  const highlights = existing.filter((h) => h.id !== highlightId);
+  if (highlights.length === existing.length) return false;
+  writeStore({
+    lastEssayId: prev?.lastEssayId ?? '',
+    scrollByEssay: prev?.scrollByEssay ?? {},
+    readEssayIds: prev?.readEssayIds ?? [],
+    highlights,
+    updatedAt: Date.now(),
+    scrollUpdatedAt: prev?.scrollUpdatedAt ?? prev?.updatedAt ?? Date.now(),
+  });
+  bumpHighlightEpoch();
+  return true;
+}
+
 export async function syncProgressFromServer(): Promise<void> {
   await syncProgress(progressIo);
   hydrated = true;

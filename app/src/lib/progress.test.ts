@@ -14,6 +14,7 @@ import {
   isEssayRead,
   markEssayRead,
   markEssaysRead,
+  removeHighlight,
   resetProgressStore,
   saveScroll,
 } from './progress';
@@ -114,5 +115,13 @@ describe('progress', () => {
     expect(saved?.color).toBe('yellow');
     expect(getHighlightsForEssay('essay-1')).toHaveLength(1);
     expect(addHighlight('essay-1', { start: 2, end: 5, text: 'overlap' })).toBeNull();
+  });
+
+  it('removes a saved highlight by id', () => {
+    const saved = addHighlight('essay-1', { start: 1, end: 4, text: 'foo' });
+    expect(saved).not.toBeNull();
+    expect(removeHighlight(saved!.id)).toBe(true);
+    expect(getHighlightsForEssay('essay-1')).toHaveLength(0);
+    expect(removeHighlight('missing')).toBe(false);
   });
 });

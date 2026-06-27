@@ -1,19 +1,22 @@
 <script lang="ts">
   import { marked } from 'marked';
   import { getEssayBody } from '$lib/corpus';
-  import { attachScrollTracking, addHighlight, getHighlightsForEssay, markEssayRead } from '$lib/progress';
+  import { attachScrollTracking, addHighlight, getHighlightsForEssay, markEssayRead, removeHighlight } from '$lib/progress';
   import { showRead } from '$lib/app.svelte';
   import { essayScrollFraction } from '$lib/essay-scroll';
   import { getEssayReaderMeta, scrollToHashInPanel } from '$lib/reader-nav';
   import { applyHighlightMarks, getRangeFromSelection, getSelectionAnchor, type TextRange } from '$lib/highlight-dom';
   import { highlightState } from '$lib/progress.svelte';
 
+  type HighlightToolbar =
+    | { mode: 'add'; range: TextRange; top: number; left: number }
+    | { mode: 'remove'; highlightId: string; top: number; left: number };
+
   let { essayId }: { essayId: string } = $props();
   let scrollEl: HTMLDivElement | undefined = $state();
   let proseEl: HTMLElement | undefined = $state();
   let scrollProgress = $state(0);
-  let pendingHighlight = $state<TextRange | null>(null);
-  let highlightToolbar = $state<{ top: number; left: number } | null>(null);
+  let highlightToolbar = $state<HighlightToolbar | null>(null);
 
   const meta = $derived(getEssayReaderMeta(essayId));
   const html = $derived.by(() => {
@@ -26,12 +29,20 @@
     scrollProgress = essayScrollFraction(scrollEl.scrollTop, scrollEl.scrollHeight, scrollEl.clientHeight);
   }
 
-  function dismissHighlightToolbar(): void {
-    pendingHighlight = null;
-    highlightToolbar = null;
-  }
+  function dismissHighlightToolbar(): void { highlightToolbar = null; }
 
   function onProseClick(e: MouseEvent): void {
+    const mark = (e.target as HTMLElement).closest('mark.highlight[data-highlight-id]');
+    if (mark) {
+      e.preventDefault();
+      e.stopPropagation();
+      const highlightId = mark.dataset.highlightId;
+      if (!highlightId) return;
+      const rect = mark.getBoundingClientRect();
+      highlightToolbar = { mode: 'remove', highlightId, top: rect.top, left: rect.left + rect.width / 2 };
+      window.getSelection()?.removeAllRanges();
+      return;
+    }
     const a = (e.target as HTMLElement).closest('a');
     if (!a) return;
     const href = a.getAttribute('href');
@@ -46,27 +57,36 @@
     if (!proseEl) return;
     proseEl.innerHTML = html;
     const marks = getHighlightsForEssay(essayId);
-    if (marks.length) applyHighlightMarks(proseEl, marks);
+    if (marks.length) applyHighlightMarks(proseEl, marks.map((m) => ({ id: m.id, start: m.start, end: m.end })));
   }
 
-  function onProsePointerUp(): void {
+  function onProsePointerUp(e: PointerEvent): void {
     if (!proseEl) return;
+    if ((e.target as HTMLElement).closest('mark.highlight')) return;
     requestAnimationFrame(() => {
       if (!proseEl) return;
       const range = getRangeFromSelection(proseEl);
       const anchor = getSelectionAnchor(proseEl);
       if (!range || !anchor) { dismissHighlightToolbar(); return; }
-      pendingHighlight = range;
-      highlightToolbar = anchor;
+      highlightToolbar = { mode: 'add', range, top: anchor.top, left: anchor.left };
     });
   }
 
   function onConfirmHighlight(e: MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
-    if (!pendingHighlight) return;
-    if (!addHighlight(essayId, pendingHighlight)) { dismissHighlightToolbar(); return; }
+    if (!highlightToolbar || highlightToolbar.mode !== 'add') return;
+    if (!addHighlight(essayId, highlightToolbar.range)) { dismissHighlightToolbar(); return; }
     window.getSelection()?.removeAllRanges();
+    dismissHighlightToolbar();
+    renderProse();
+  }
+
+  function onRemoveHighlight(e: MouseEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!highlightToolbar || highlightToolbar.mode !== 'remove') return;
+    removeHighlight(highlightToolbar.highlightId);
     dismissHighlightToolbar();
     renderProse();
   }
@@ -115,9 +135,13 @@
   <div class="essay-progress" aria-hidden="true">
     <div class="essay-progress-fill" style:transform="scaleX({scrollProgress})"></div>
   </div>
-  {#if highlightToolbar && pendingHighlight}
-    <div class="highlight-toolbar" style:top="{highlightToolbar.top}px" style:left="{highlightToolbar.left}px" role="toolbar" aria-label="Text selection">
-      <button type="button" onmousedown={(e) => e.preventDefault()} onclick={onConfirmHighlight}>Highlight</button>
+  {#if highlightToolbar}
+    <div class="highlight-toolbar" style:top="{highlightToolbar.top}px" style:left="{highlightToolbar.left}px" role="toolbar" aria-label="Highlight actions">
+      {#if highlightToolbar.mode === 'add'}
+        <button type="button" onmousedown={(e) => e.preventDefault()} onclick={onConfirmHighlight}>Highlight</button>
+      {:else}
+        <button type="button" onmousedown={(e) => e.preventDefault()} onclick={onRemoveHighlight}>Remove highlight</button>
+      {/if}
     </div>
   {/if}
   <div class="panel-scroll read-panel" bind:this={scrollEl}>
