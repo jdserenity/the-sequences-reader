@@ -17,12 +17,12 @@ describe('highlight-dom', () => {
     sel.removeAllRanges();
   });
 
-  it('wraps a text range in mark elements', () => {
+  it('wraps a text range in highlight spans', () => {
     const root = document.createElement('article');
     root.innerHTML = '<p>Hello world</p>';
     applyHighlightMarks(root, [{ id: 'h1', start: 6, end: 11 }]);
-    expect(root.querySelector('mark.highlight')?.textContent).toBe('world');
-    expect(root.querySelector('mark.highlight')?.dataset.highlightId).toBe('h1');
+    expect(root.querySelector('span.highlight')?.textContent).toBe('world');
+    expect(root.querySelector('span.highlight')?.dataset.highlightId).toBe('h1');
   });
 
   it('computes offsets for nested text nodes', () => {
@@ -46,7 +46,7 @@ describe('highlight-dom', () => {
     expect(saved).toEqual({ start: 0, end: 5, text: 'Hello' });
     root.innerHTML = '<p>Hello world</p><p>Second paragraph</p>';
     applyHighlightMarks(root, [{ id: 'h1', start: saved!.start, end: saved!.end }]);
-    expect(root.querySelector('mark.highlight')?.textContent).toBe('Hello');
+    expect(root.querySelector('span.highlight')?.textContent).toBe('Hello');
     sel.removeAllRanges();
   });
 

@@ -112,6 +112,23 @@ describe('progress-sync', () => {
     expect(putBody?.scrollByEssay['essay-1']).toBe(99);
   });
 
+  it('pushes highlight removal when local deleted and remote still has it', async () => {
+    const hl = { id: 'h1', essayId: 'essay-1', start: 0, end: 5, text: 'hello', color: 'yellow' as const, createdAt: 1 };
+    const local: ReadingProgress = { ...sample, highlights: [], updatedAt: 500, scrollUpdatedAt: 500 };
+    const remote: ReadingProgress = { ...sample, highlights: [hl], updatedAt: 100, scrollUpdatedAt: 100 };
+    let putBody: ReadingProgress | null = null;
+    const fetchFn = mockFetch((url, init) => {
+      if (url === '/api/progress' && !init?.method) return new Response(JSON.stringify(remote));
+      if (init?.method === 'PUT') {
+        putBody = JSON.parse(String(init.body)) as ReadingProgress;
+        return new Response(JSON.stringify(putBody));
+      }
+      return new Response('null');
+    });
+    await flushProgressPush({ read: () => local, write: () => {} }, fetchFn);
+    expect(putBody?.highlights).toEqual([]);
+  });
+
   it('treats 503 as offline', async () => {
     const fetchFn = mockFetch(() => new Response('{}', { status: 503 }));
     expect(await fetchRemoteProgress(fetchFn)).toBeNull();

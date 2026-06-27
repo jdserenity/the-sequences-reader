@@ -62,11 +62,23 @@ describe('mergeProgress', () => {
     expect(merged.readEssayIds).toContain('essay-b');
   });
 
-  it('unions highlights from both sides', () => {
+  it('unions highlights from both sides when updatedAt ties', () => {
     const hl = { id: 'h1', essayId: 'essay-a', start: 0, end: 5, text: 'hello', color: 'yellow' as const, createdAt: 1 };
     const hl2 = { id: 'h2', essayId: 'essay-b', start: 0, end: 3, text: 'bye', color: 'yellow' as const, createdAt: 2 };
-    const merged = mergeProgress({ ...local, highlights: [hl] }, { ...remote, highlights: [hl2] }).progress!;
+    const merged = mergeProgress(
+      { ...local, highlights: [hl], updatedAt: 100 },
+      { ...remote, highlights: [hl2], updatedAt: 100 },
+    ).progress!;
     expect(merged.highlights.map((h) => h.id).sort()).toEqual(['h1', 'h2']);
+  });
+
+  it('keeps local highlights when local updatedAt is newer (deletes win)', () => {
+    const hl = { id: 'h1', essayId: 'essay-a', start: 0, end: 5, text: 'hello', color: 'yellow' as const, createdAt: 1 };
+    const merged = mergeProgress(
+      { ...local, highlights: [], updatedAt: 500 },
+      { ...remote, highlights: [hl], updatedAt: 100 },
+    ).progress!;
+    expect(merged.highlights).toEqual([]);
   });
 });
 

@@ -124,4 +124,10 @@ describe('progress', () => {
     expect(getHighlightsForEssay('essay-1')).toHaveLength(0);
     expect(removeHighlight('missing')).toBe(false);
   });
+
+  it('allows re-highlighting after remove', () => {
+    const saved = addHighlight('essay-1', { start: 10, end: 20, text: 'sample text' });
+    removeHighlight(saved!.id);
+    expect(addHighlight('essay-1', { start: 10, end: 20, text: 'sample text' })).not.toBeNull();
+  });
 });

@@ -17,6 +17,13 @@ function unionHighlights(a: EssayHighlight[], b: EssayHighlight[]): EssayHighlig
   return [...map.values()].sort((x, y) => x.start - y.start || x.createdAt - y.createdAt);
 }
 
+/** Newer updatedAt wins so local deletes are not resurrected from remote; tie → union. */
+function mergeHighlights(a: EssayHighlight[], b: EssayHighlight[], atA: number, atB: number): EssayHighlight[] {
+  if (atA > atB) return [...a];
+  if (atB > atA) return [...b];
+  return unionHighlights(a, b);
+}
+
 /** Union read sets; scroll positions last-write-wins on scrollUpdatedAt. */
 export function mergeProgress(local: ReadingProgress | null, remote: ReadingProgress | null): MergeResult {
   if (!local && !remote) return { progress: null, source: 'none' };
@@ -30,7 +37,7 @@ export function mergeProgress(local: ReadingProgress | null, remote: ReadingProg
       lastEssayId: scrollFromLocal ? l.lastEssayId : r.lastEssayId,
       scrollByEssay: scrollFromLocal ? { ...r.scrollByEssay, ...l.scrollByEssay } : { ...l.scrollByEssay, ...r.scrollByEssay },
       readEssayIds: unionReadIds(l.readEssayIds, r.readEssayIds),
-      highlights: unionHighlights(l.highlights ?? [], r.highlights ?? []),
+      highlights: mergeHighlights(l.highlights ?? [], r.highlights ?? [], l.updatedAt, r.updatedAt),
       updatedAt: Math.max(l.updatedAt, r.updatedAt),
       scrollUpdatedAt: Math.max(scrollAt(l), scrollAt(r)),
     },
@@ -48,6 +55,7 @@ export function shouldPushAfterSync(remote: ReadingProgress | null, merged: Read
   if ((m.highlights ?? []).length !== (r.highlights ?? []).length) return true;
   const highlightIds = new Set((r.highlights ?? []).map((h) => h.id));
   if ((m.highlights ?? []).some((h) => !highlightIds.has(h.id))) return true;
+  if ((r.highlights ?? []).some((h) => !new Set((m.highlights ?? []).map((x) => x.id)).has(h.id))) return true;
   if (m.scrollUpdatedAt > scrollAt(r)) return true;
   if (m.updatedAt > r.updatedAt) return true;
   return JSON.stringify(m.scrollByEssay) !== JSON.stringify(r.scrollByEssay);

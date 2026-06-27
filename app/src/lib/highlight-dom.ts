@@ -54,7 +54,7 @@ export function wrapTextOffset(root: HTMLElement, start: number, end: number, id
   for (const seg of [...segments].reverse()) {
     const { node, start: s, end: e } = seg;
     if (s === 0 && e === node.length) {
-      const mark = document.createElement('mark');
+      const mark = document.createElement('span');
       mark.className = 'highlight';
       if (id) mark.dataset.highlightId = id;
       node.parentNode?.replaceChild(mark, node);
@@ -62,7 +62,7 @@ export function wrapTextOffset(root: HTMLElement, start: number, end: number, id
     } else {
       const after = node.splitText(e);
       const middle = s === 0 ? node : node.splitText(s);
-      const mark = document.createElement('mark');
+      const mark = document.createElement('span');
       mark.className = 'highlight';
       if (id) mark.dataset.highlightId = id;
       middle.parentNode?.replaceChild(mark, middle);

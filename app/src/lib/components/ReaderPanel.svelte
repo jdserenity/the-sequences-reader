@@ -32,7 +32,7 @@
   function dismissHighlightToolbar(): void { highlightToolbar = null; }
 
   function onProseClick(e: MouseEvent): void {
-    const mark = (e.target as HTMLElement).closest('mark.highlight[data-highlight-id]');
+    const mark = (e.target as HTMLElement).closest('span.highlight[data-highlight-id]');
     if (mark) {
       e.preventDefault();
       e.stopPropagation();
@@ -62,7 +62,7 @@
 
   function onProsePointerUp(e: PointerEvent): void {
     if (!proseEl) return;
-    if ((e.target as HTMLElement).closest('mark.highlight')) return;
+    if ((e.target as HTMLElement).closest('span.highlight')) return;
     requestAnimationFrame(() => {
       if (!proseEl) return;
       const range = getRangeFromSelection(proseEl);
